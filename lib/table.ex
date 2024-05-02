@@ -9,31 +9,32 @@ defmodule Table do
 
   alias Deck
 
-  # Callbacks
+  # Cliente
 
-  def start_link(tableid) do
+  def start_link(table_id) do
     GenServer.star_link(__MODULE__, table_id, name: via_tuple(table_id))
   end
+
+  def start_game(table) do
+    GenServer.cast(via_tupe(table), :start_game)
+  end
+
+  defp via_tuple(table_id) do
+    # And the tuple always follow the same format:
+    # {:via, module_name, term}
+    {:via, Registry, {Registry.Table, table_id}}
+  end
+
+
+  #Servidor
 
   @impl true
   def init(table_id) do
     {:ok, table_id}
   end
 
-  @impl true
-  def handle_call(:pop, _from, [head | tail]) do
-    {:reply, head, tail}
-  end
-
-  @impl true
-  def handle_cast({:push, element}, state) do
-    {:noreply, [element | state]}
-  end
-
-  defp via_tuple(table_id) do
-    # And the tuple always follow the same format:
-    # {:via, module_name, term}
-    {:via, Registry, {Registr.Table, table_id}}
-  end
+  #Estou pensando que non necesito inicializar o game como tal. Non necesito nada antes de que se unan os xogadores
+  #escepto a propia mesa
+  #Una vez añadidos os xogadores xa podo crear o mazo de cartas
 
 end
