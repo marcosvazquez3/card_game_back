@@ -29,7 +29,7 @@ defmodule Table_Supervisor do
 
   def destroy_table(table_id) do
     :ets.delete(:game_state, table_id)
-    DynamicSupervisor.terminate_child(__MODULE__, pid_from_game_id(table_id))
+    #DynamicSupervisor.terminate_child(__MODULE__, pid_from_game_id(table_id))
   end
 
   def exists_id?(table_id) do

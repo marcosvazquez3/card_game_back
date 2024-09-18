@@ -12,11 +12,11 @@ defmodule Table do
   # Cliente
 
   def start_link(table_id) do
-    GenServer.star_link(__MODULE__, table_id, name: via_tuple(table_id))
+    GenServer.start_link(__MODULE__, table_id, name: via_tuple(table_id))
   end
 
   def start_game(table) do
-    GenServer.cast(via_tupe(table), :start_game)
+    #GenServer.cast(via_tupe(table), :start_game)
   end
 
   defp via_tuple(table_id) do
