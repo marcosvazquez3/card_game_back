@@ -1,0 +1,18 @@
+Teño case feita a lóxica do xogo, falta retocar o take un pouco, pero en vez de acabar
+con eso e facer 50 tests prefiro arreglalo doutra maneira.
+
+Teño que entender os structs primeiro
+
+1- Mirar ven as estructuras de datos e usar as que tocan ben, todo con ets no é boa idea
+    1.1- Por exemplo para os xogadores vamos facer un map que teña como keys os nomes. E non 
+    se permite a repetición
+2- Separar as funcións de table_without_conexion, cada cousa no seu lado, como toca
+3- Mirar o tema dos estados e facer a lóxica do xogo con respecto a ela
+
+
+https://hexdocs.pm/nebulex/Nebulex.html
+
+https://hexdocs.pm/phoenix_live_view/welcome.html#example
+
+O tema das conexións
+https://hexdocs.pm/phoenix_pubsub/Phoenix.PubSub.html

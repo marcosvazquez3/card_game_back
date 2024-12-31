@@ -1,7 +1,7 @@
 defmodule Player do
 
-  @enforce_keys [:name]
-  defstruct [:name]
+  # Esto sería mais ben player info
+  defstruct [cards: [], points: 0, pointcards: []]
 
   def new(name) do
     %Player{name: name}

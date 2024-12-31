@@ -21,7 +21,7 @@ defmodule Table_Supervisor do
     DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def new_table() do
+  def new_game() do
     table_id = generate_table_id()
     {:ok, _} = DynamicSupervisor.start_child(__MODULE__, {Table, table_id})
     table_id
@@ -36,9 +36,11 @@ defmodule Table_Supervisor do
     not (Registry.lookup(Registry.Game, table_id) == [])
   end
 
+
+  # Esto podería facerse en db. Pa ahora pode servir, pero mólame a idea
   defp generate_table_id() do
     id =
-      :rand.uniform(9999)
+      :rand.uniform(9999999)
       |> Integer.to_string()
       |> String.pad_leading(4, "#")
 
