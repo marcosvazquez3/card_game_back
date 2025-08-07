@@ -1,4 +1,4 @@
-defmodule Application do
+defmodule CardGameBack.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
@@ -10,15 +10,16 @@ defmodule Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {Registry, keys: :unique, name: Registry.Game},
-      {Registry,
-       keys: :duplicate, name: Registry.PubSub, partitions: System.schedulers_online()},
-      MafiaEngine.GameSupervisor
+      {Registry, keys: :unique, name: Registry.Table},
+      # ESTO É PA PUBSUB
+      # {Registry,
+      #  keys: :duplicate, name: Registry.PubSub, partitions: System.schedulers_online()},
+      TableSupervisor
     ]
 
     :rand.uniform()
     _ets = :ets.new(:table_state, [:public, :named_table])
-    opts = [strategy: :one_for_one, name: Table_supervisor]
+    opts = [strategy: :one_for_one, name: CardGameBack.TableSupervisor]
     Supervisor.start_link(children, opts)
   end
 end

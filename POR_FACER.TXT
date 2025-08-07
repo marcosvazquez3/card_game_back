@@ -16,3 +16,29 @@ https://hexdocs.pm/phoenix_live_view/welcome.html#example
 
 O tema das conexións
 https://hexdocs.pm/phoenix_pubsub/Phoenix.PubSub.html
+
+CENTRARME EN:
+
+    Intentar ter para o día 23 algo funcional pa ensinarlle a Laura
+
+    Para agosto ter case funcionando todo sen base de datos
+
+    Revisar o tema da xeración das cartas
+
+Explicacións: 
+    Phoenix solo se utiliza no front, non no back
+
+    Sigo sen ter moita idea de como funciona pubsub, pero vamos centrarnos no front agora mesmo
+    todo o que queira probar pois probarase mockeando as chamadas a pubsub, non preocuparse
+
+    Sigo sen ter moi claro como vou meter a base de datos, pero vai entrar dalguna maneira.
+
+    Para usuarios gustaríame xuntalo con google pero tamén podo pedir ter unha base de datos para eso
+
+    Gustaríame poder meter repeticions pero non teño moi claro pa que así que vamos por orden
+
+    Importante, ejemplo de xogo
+    https://blog.appsignal.com/2019/08/13/elixir-alchemy-multiplayer-go-with-registry-pubsub-and-dynamic-supervisors.html
+
+
+Vamos ir amodiño, non vamos usar PubSub por ahora, porque fai que me perda

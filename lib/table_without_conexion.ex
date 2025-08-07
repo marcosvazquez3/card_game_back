@@ -138,7 +138,7 @@ defmodule Table_WT_Conection do
   end
 
   defp put_cards_on_table(player_info, position, number_of_cards) do
-    [{player_name, hand, _, card_poinst}] = player_info
+    [{player_name, hand, _, _}] = player_info
 
     cards_to_show = hand |> Enum.slice(position, number_of_cards)
     # Miro las cartas en la mesa
@@ -158,18 +158,18 @@ defmodule Table_WT_Conection do
       [] -> {:error, "Player does not exists"}
       _ -> put_cards_on_table(exists_player, position, number_of_cards)
     end
-    should_the_game_end?(player_name)
+    #should_the_game_end?(player_name)
   end
 
   # ---------------------------------------------- #
 
-  def take_cards(player_name, {x,y}, position, orientation, table_cards) do
-    if card in table_cards do
+  def take_cards(player_name, {x,y}, position, reverse, table_cards) do
+    if {x,y} in table_cards do
       {_, player_cards, points, point_cards} = :ets.lookup(:game_state, player_name)
       cond do
-        orientation -> card = {y,x}
+        reverse -> card = {y,x}
       end
-      insert_card_given_pos(player_cards, card, position)
+      insert_card_given_pos(player_cards, {x,y}, position)
       :ets.insert(:game_state, {player_name, player_cards, points, point_cards})
     end
   end
@@ -181,9 +181,9 @@ defmodule Table_WT_Conection do
   end
 
   #Solo se poden coller as cartas dos vordes
-  def process_take(player_name, card_taken, position, orientation, table_state) do
+  def process_take(player_name, card_taken, position, reverse, table_state) do
     [{_, table_cards, table_player}] = table_state
-    take_cards(player_name, card, position, orientation, table_cards)
+    take_cards(player_name, card_taken, position, reverse, table_cards)
     give_points(player_name)
   end
 
@@ -191,11 +191,12 @@ defmodule Table_WT_Conection do
   # Solo se poden coller as cartas das beiras, non as do medio
   # Como solo se pode coller a primeira ou a última podo facer o de collela e ou do principio ou do final
   # Necesito a pensar en esta partida como estados
-  def take(player_name, card_taken, orientation) do
+  # card_taken podería ser first ou last
+  def take(player_name, card_taken, position, reverse) do
     state = :ets.lookup(:game_state, "table")
     case state do
       [{"table"}] -> {:error, "Cannot scout no cards on the table"}
-      [_] -> process_take(player_name, card_taken, position, orientation, state) # Tengo que dar los puntos a la pers
+      [_] -> process_take(player_name, card_taken, position, reverse, state) # Tengo que dar los puntos a la pers
     end
   end
 
@@ -232,11 +233,11 @@ defmodule Table_WT_Conection do
     {:final, "The game has ended"}
   end
 
-  def calc_points() do
-    [{_, num_players, player_names}] = :ets.lookup(:game_state, "players")
-  end
+  #def calc_points() do
+  #  [{_, num_players, player_names}] = :ets.lookup(:game_state, "players")
+  #end
 
-  def calc_point([h|t], result_array) do
+  def calc_point([h|_], result_array) do
     [{_, cards, points, point_cards}] = :ets.lookup(:game_state, h)
     real_points = length(point_cards) + points - length(cards)
     [{h, real_points} | result_array]

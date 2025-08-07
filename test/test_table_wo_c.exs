@@ -142,8 +142,7 @@ defmodule TableTest do
     :ets.insert(:game_state, {"table", table, "Pepe"})
     hand = [{5,2},{2,3},{3,2},{4,9}]
     :ets.insert(:game_state, {"Marcos", hand, 0, []})
-    assert Table_WT_Conection.get("Marcos", 1, 3) == {:error, "No se pudieron poner las cartas"}
+    assert Table_WT_Conection.take("Marcos", 1, 3) == {:error, "No se pudieron poner las cartas"}
     assert :ets.lookup(:game_state, "table") == [{"table", table, "Pepe"}]
   end
-
 end

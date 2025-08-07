@@ -14,7 +14,8 @@ defmodule CardGameBack.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {CardGameBack.Application, []}
     ]
   end
 
@@ -23,7 +24,9 @@ defmodule CardGameBack.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-      {:decimal, "~> 2.0"}
+      {:decimal, "~> 2.0"},
+      {:elixir_uuid, "~> 1.2"},
+      {:mimic, "~> 2.0", only: :test}
     ]
   end
 end

@@ -23,12 +23,15 @@ defmodule Deck do
     # Puedde que el base list sea menor del esperado por el trunc
     # El num reverse sirve para que al eliminar elementos en el is_divisor siempre se elminen
     # las cartas con mayor número
+    # Creo que non vale a pena crear as baraxas dinámicamente porque vai facer as partidas moi curtas
+    # para poucos xogadores
     deck
        |> Enum.reverse()
        |> is_divisor_9?(players)
        |> Enum.reverse()
        |> Enum.shuffle()
        |> spin_card?()
+       |> Enum.chunk_every(9)
   end
 
   def is_divisor_9?([h|t], players) do

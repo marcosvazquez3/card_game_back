@@ -6,16 +6,17 @@ defmodule DeckTest do
 
   test "create deck for 2 players" do
     players = 2
-    assert length(Deck.deck_gen(players)) == players*9
+    deck = Deck.deck_gen(players)
+    assert length(deck) == players
   end
 
   test "create deck 112 players" do
     players = 112
-    assert length(Deck.deck_gen(players)) == players*9
+    assert length(Deck.deck_gen(players)) == players
   end
 
   test "create deck 10000 players" do
     players = 10000
-    assert length(Deck.deck_gen(players)) == players*9
+    assert length(Deck.deck_gen(players)) == players
   end
 end
