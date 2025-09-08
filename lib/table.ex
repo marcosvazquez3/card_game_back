@@ -202,6 +202,27 @@ defmodule Table do
     end
   end
 
+  def get_card(card, [], table_to_return) do
+    "there was a problem"
+  end
+
+  def get_card(card, [h|t], table_to_return) do
+    if card == h do
+      table = Enum.reverse(t) ++ table_to_return
+      Enum.reverse(table)
+    else
+      get_card(card, t, [h|table_to_return])
+    end
+  end
+
+  def handle_call({:scout, card, position, player_id}, _from, state) do
+    new_table_state = get_card(card, state.table_cards, [])
+    updated_player_cards = List.insert_at(state.player_list[player_id].cards, position, card)
+    new_state_player_update = put_in(state.player_list[player_id].cards, updated_player_cards)
+    new_state = %{new_state_player_update | table_cards: new_table_state, table_cards_count: length(new_table_state)}
+    {:reply, "Game created", new_state}
+  end
+
 
   @impl true
   def handle_call(:get_state, _from, state) do
