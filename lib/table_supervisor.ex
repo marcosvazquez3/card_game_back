@@ -24,13 +24,13 @@ defmodule TableSupervisor do
 
   def new_game() do
     table_id = UUID.uuid1()
-    {:ok, _} = DynamicSupervisor.start_child(__MODULE__, {Table, via_tuple(table_id)})
+    {:ok, _} = DynamicSupervisor.start_child(__MODULE__, {Game.Table, via_tuple(table_id)})
     table_id
   end
 
   def destroy_table(table_id) do
     :ets.delete(:game_state, table_id)
-    if pid = pid_from_table_id(table_id) do
+    if pid = Game.TableManager.get_table_pid(table_id) do
       DynamicSupervisor.terminate_child(__MODULE__, pid)
     else
       :ok  # or log error/warning
@@ -39,13 +39,6 @@ defmodule TableSupervisor do
 
   defp via_tuple(name) do
     {:via, Registry, {Registry.Table, name}}
-  end
-
-  defp pid_from_table_id(table_id) do
-    case Registry.lookup(Registry.Table, table_id) do
-      [{pid, _}] -> pid
-      [] -> nil
-    end
   end
 
 end

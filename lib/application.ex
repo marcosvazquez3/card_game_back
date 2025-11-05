@@ -14,11 +14,10 @@ defmodule CardGameBack.Application do
       # ESTO É PA PUBSUB
       # {Registry,
       #  keys: :duplicate, name: Registry.PubSub, partitions: System.schedulers_online()},
-      TableSupervisor
+      TableSupervisor,
+      {Plug.Cowboy, scheme: :http, plug: Router, options: [port: 8080]}
     ]
 
-    :rand.uniform()
-    _ets = :ets.new(:table_state, [:public, :named_table])
     opts = [strategy: :one_for_one, name: CardGameBack.TableSupervisor]
     Supervisor.start_link(children, opts)
   end

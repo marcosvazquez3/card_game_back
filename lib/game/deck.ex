@@ -1,4 +1,4 @@
-defmodule Deck do
+defmodule Game.Deck do
 
   # Teño que revisar que necesito para o número de xogadores
   # xa que o número de cartas non aumenta linealmente

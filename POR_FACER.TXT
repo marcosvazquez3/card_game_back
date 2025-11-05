@@ -41,4 +41,22 @@ Explicacións:
     https://blog.appsignal.com/2019/08/13/elixir-alchemy-multiplayer-go-with-registry-pubsub-and-dynamic-supervisors.html
 
 
-Vamos ir amodiño, non vamos usar PubSub por ahora, porque fai que me perda
+Necesito empezar a mostar os endpoints. E si vou manter separado o back do front
+
+Empezar coa sesión de usuarios en back e endpoint antes
+
+Empezar coa memoria
+
+
+https://www.youtube.com/@ElixirMentor
+https://www.youtube.com/watch?v=UgQTcvdbccA
+
+https://chatgpt.com/g/g-68e55a886420819196f4d68036a5df1f-elixir-software-design-teams
+
+
+Sobre ecto
+https://www.youtube.com/watch?v=A6V3Ix2OIQQ
+
+Meter validacións para os turnos ou algunha forma de saber de quén é o turno de quén.
+
+Facer ramas e meter o commits ahí cada día

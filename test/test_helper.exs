@@ -1,2 +1,2 @@
-Mimic.copy(Deck)
+Mimic.copy(Game.Deck)
 ExUnit.start()
