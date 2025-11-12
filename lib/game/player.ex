@@ -1,5 +1,4 @@
 defmodule Game.Player do
-
   # Esto sería mais ben player info
   defstruct [:player_name, cards: [], points: 0, pointcards: []]
 
@@ -10,5 +9,4 @@ defmodule Game.Player do
   def add_hand_cards(player, hand_cards) do
     %{player | cards: hand_cards}
   end
-
 end

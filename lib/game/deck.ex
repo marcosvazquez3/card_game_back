@@ -1,5 +1,4 @@
 defmodule Game.Deck do
-
   # Teño que revisar que necesito para o número de xogadores
   # xa que o número de cartas non aumenta linealmente
   # A idea é que todos os xogadores teñan sempre 9 cartas independentemente dos xogadores
@@ -11,8 +10,8 @@ defmodule Game.Deck do
   # Porque faise demasiado
 
   defp base_list(players) do
-    number_cards = 9*players
-    size_float = (-(-1)+:math.sqrt(((-1)*(-1))-4*1*(-(number_cards*2))))/2
+    number_cards = 9 * players
+    size_float = (-(-1) + :math.sqrt(-1 * -1 - 4 * 1 * -(number_cards * 2))) / 2
     size = ceil(size_float)
     Enum.to_list(1..size)
   end
@@ -26,18 +25,19 @@ defmodule Game.Deck do
     # Creo que non vale a pena crear as baraxas dinámicamente porque vai facer as partidas moi curtas
     # para poucos xogadores
     deck
-       |> Enum.reverse()
-       |> is_divisor_9?(players)
-       |> Enum.reverse()
-       |> Enum.shuffle()
-       |> spin_card?()
-       |> Enum.chunk_every(9)
+    |> Enum.reverse()
+    |> is_divisor_9?(players)
+    |> Enum.reverse()
+    |> Enum.shuffle()
+    |> spin_card?()
+    |> Enum.chunk_every(9)
   end
 
-  def is_divisor_9?([h|t], players) do
-    number_cards = players*9
+  def is_divisor_9?([h | t], players) do
+    number_cards = players * 9
+
     cond do
-      length([h|t]) == number_cards -> [h|t]
+      length([h | t]) == number_cards -> [h | t]
       true -> is_divisor_9?(t, players)
     end
   end
@@ -46,13 +46,13 @@ defmodule Game.Deck do
     []
   end
 
-  def spin_card?([h|t]) do
+  def spin_card?([h | t]) do
     random_number = :rand.uniform(2)
-    {x,y} = h
+    {x, y} = h
+
     case random_number do
-      2 -> [{y,x} | spin_card?(t)]
+      2 -> [{y, x} | spin_card?(t)]
       1 -> [h | spin_card?(t)]
     end
   end
-
 end

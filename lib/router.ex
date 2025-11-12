@@ -1,16 +1,20 @@
 defmodule Router do
   use Plug.Router
 
-  plug(Plug.Logger) # Permite loggear as requests que recibamos
+  # Permite loggear as requests que recibamos
+  plug(Plug.Logger)
 
-  plug(:match) # Para facer matching das request
+  # Para facer matching das request
+  plug(:match)
 
   plug(
     Plug.Parsers,
     parsers: [:urlencoded, :json],
     pass: ["application/json"],
     json_decoder: Jason
-    ) # Permite parsear o body se matchea o formato
+  )
+
+  # Permite parsear o body se matchea o formato
 
   plug(:dispatch)
 
@@ -24,10 +28,26 @@ defmodule Router do
   end
 
   post "/:id/show" do
-    cards = conn.body_params["cards"]
-    player_name = conn.body_params["player_name"]
-    Game.Table.show(id, cards, player_name)
-    send_resp(conn, 200, "done show")
+    table_id = id
+    attrs = %{
+      name: conn.body_params["name"],
+      cards: conn.body_params["cards"]
+    }
+    changeset = Utils.Api.ShowValidations.changeset(%Utils.Api.ShowValidations{}, attrs)
+
+    if changeset.valid? do
+      %{name: name, cards: cards} = Ecto.Changeset.apply_changes(changeset)
+      Game.Table.show(table_id, cards, name)
+      send_resp(conn, 200, "done show")
+    else
+      errors =
+        Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+          Enum.reduce(opts, msg, fn {key, value}, acc ->
+            String.replace(acc, "%{#{key}}", to_string(value))
+          end)
+        end)
+      send_resp(conn, 422, Jason.encode!(%{errors: errors}))
+    end
   end
 
   post "/:id/scout" do
@@ -43,7 +63,9 @@ defmodule Router do
     send_resp(conn, 200, game_id)
   end
 
-  post "/:id/addPlayer/:player_name" do
+  post "/:id/addPlayer" do
+    player_name = conn.body_params["name"]
+    dbg(player_name)
     Game.Table.add_player(id, player_name)
     send_resp(conn, 200, "Player added")
   end
@@ -54,6 +76,11 @@ defmodule Router do
     send_resp(conn, 200, "current state: #{inspect(table_state)}")
   end
 
-  match _, do: send_resp(conn, 404, "Not Found")
 
+  get "/:id/startGame" do
+    Game.Table.start_game(id)
+    send_resp(conn, 200, "Game started")
+  end
+
+  match(_, do: send_resp(conn, 404, "Not Found"))
 end

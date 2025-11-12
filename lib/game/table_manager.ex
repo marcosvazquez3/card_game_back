@@ -18,5 +18,4 @@ defmodule Game.TableManager do
   def via_tuple(table_id) do
     {:via, Registry, {@registry, table_id}}
   end
-
 end

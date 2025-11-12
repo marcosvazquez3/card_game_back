@@ -3,7 +3,7 @@ defmodule CardGameBack.Application do
   # for more information on OTP Applications
   @moduledoc false
 
-  #PubSub es realtime publisher subcriber
+  # PubSub es realtime publisher subcriber
 
   use Application
 

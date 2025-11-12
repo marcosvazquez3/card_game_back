@@ -1,5 +1,4 @@
 defmodule Table_WT_Conection do
-
   # A tabla do estado da mesa vai ser deta maneira, {"table", [card1,card2], "player_name"}
   # A tabla dos xogadores vai ser desta maneira, {"player_name", [cards], points, [point_cards]}
   # A tabla que garda o número de xogadores é esta dos{"players", num_players, [name1, name2]}
@@ -25,7 +24,6 @@ defmodule Table_WT_Conection do
 
   # ---------------------------------------------- #
 
-
   # ---------------------------------------------- #
   #  AÑADIR JUGADORES                              #
   # ---------------------------------------------- #
@@ -40,6 +38,7 @@ defmodule Table_WT_Conection do
   # El num_players del case, si no se le pone el "^" piensa que es una variable nueva
   def check_player_count(player_name) do
     [{_, num_players, player_list}] = :ets.lookup(:game_state, "players")
+
     case length(player_list) do
       ^num_players -> {:error, "No more players allowed"}
       _ -> save_players(player_name)
@@ -48,6 +47,7 @@ defmodule Table_WT_Conection do
 
   def add_player(player_name) do
     exists_player = :ets.lookup(:game_state, player_name)
+
     case exists_player do
       [] -> check_player_count(player_name)
       _ -> {:error, "Player name already exist"}
@@ -56,9 +56,8 @@ defmodule Table_WT_Conection do
 
   # TODO hai que modificar esto
   def update_player_cards({player_name, hand}) do
-      :ets.insert(:game_state, {player_name, hand, 0, []})
+    :ets.insert(:game_state, {player_name, hand, 0, []})
   end
-
 
   # ---------------------------------------------- #
   # Repartir cartas
@@ -67,10 +66,12 @@ defmodule Table_WT_Conection do
   def distribute_cards() do
     [{_, num_players, player_list}] = :ets.lookup(:game_state, "players")
     [{_, deck}] = :ets.lookup(:game_state, "deck")
-    card_per_hand = round(length(deck)/num_players)
+    card_per_hand = round(length(deck) / num_players)
     hand_decks = Enum.chunk_every(deck, card_per_hand)
     players_with_decks = Enum.zip(player_list, hand_decks)
-    for {player_name, hand} <- players_with_decks, do: :ets.insert(:game_state, {player_name, hand, 0, []})
+
+    for {player_name, hand} <- players_with_decks,
+        do: :ets.insert(:game_state, {player_name, hand, 0, []})
   end
 
   # ---------------------------------------------- #
@@ -90,6 +91,7 @@ defmodule Table_WT_Conection do
   def insert_card_given_pos(card, deck, pos) do
     Enum.reverse(find(deck, card, pos, []))
   end
+
   # ---------------------------------------------- #
   # A idea aquí é ter funcións para cada un dos casos, primerio identifico en cal estamos e despois miramos o resultado
 
@@ -113,14 +115,18 @@ defmodule Table_WT_Conection do
     s_number_p = s_card_p |> elem(0)
 
     cond do
-      (f_number_p == s_number_p) && (f_number_t == s_number_t) ->
+      f_number_p == s_number_p && f_number_t == s_number_t ->
         check_f_card(f_card_t, f_card_p)
-      (f_number_p < s_number_p) && (f_number_t < s_number_t) ->
+
+      f_number_p < s_number_p && f_number_t < s_number_t ->
         check_f_card(f_card_t, f_card_p)
-      (f_number_p == s_number_p) && (f_number_t < s_number_t) ->
+
+      f_number_p == s_number_p && f_number_t < s_number_t ->
         true
-      (f_number_p < s_number_p) && (f_number_t == s_number_t) ->
+
+      f_number_p < s_number_p && f_number_t == s_number_t ->
         false
+
       true ->
         "There's been a problem"
     end
@@ -130,8 +136,10 @@ defmodule Table_WT_Conection do
     cond do
       length(table_cards) < length(player_cards) ->
         true
+
       length(table_cards) == length(player_cards) ->
         compare_cards_equal_length(table_cards, player_cards)
+
       true ->
         false
     end
@@ -143,6 +151,7 @@ defmodule Table_WT_Conection do
     cards_to_show = hand |> Enum.slice(position, number_of_cards)
     # Miro las cartas en la mesa
     [{_, table_cards, _}] = :ets.lookup(:game_state, "table")
+
     if not can_put_cards?(table_cards, cards_to_show) do
       {:error, "No se pudieron poner las cartas"}
     else
@@ -154,33 +163,36 @@ defmodule Table_WT_Conection do
   # Se va a modificar el show para solo pasar la posición de la carta a mostrar
   def show(player_name, position, number_of_cards) do
     exists_player = :ets.lookup(:game_state, player_name)
+
     case exists_player do
       [] -> {:error, "Player does not exists"}
       _ -> put_cards_on_table(exists_player, position, number_of_cards)
     end
-    #should_the_game_end?(player_name)
+
+    # should_the_game_end?(player_name)
   end
 
   # ---------------------------------------------- #
 
-  def take_cards(player_name, {x,y}, position, reverse, table_cards) do
-    if {x,y} in table_cards do
+  def take_cards(player_name, {x, y}, position, reverse, table_cards) do
+    if {x, y} in table_cards do
       {_, player_cards, points, point_cards} = :ets.lookup(:game_state, player_name)
+
       cond do
-        reverse -> card = {y,x}
+        reverse -> card = {y, x}
       end
-      insert_card_given_pos(player_cards, {x,y}, position)
+
+      insert_card_given_pos(player_cards, {x, y}, position)
       :ets.insert(:game_state, {player_name, player_cards, points, point_cards})
     end
   end
 
   def give_points(player_name) do
     [{_, cards, points, point_cards}] = :ets.lookup(:game_state, player_name)
-    :ets.insert(:game_state, {player_name, cards, points+1, point_cards})
-
+    :ets.insert(:game_state, {player_name, cards, points + 1, point_cards})
   end
 
-  #Solo se poden coller as cartas dos vordes
+  # Solo se poden coller as cartas dos vordes
   def process_take(player_name, card_taken, position, reverse, table_state) do
     [{_, table_cards, table_player}] = table_state
     take_cards(player_name, card_taken, position, reverse, table_cards)
@@ -194,9 +206,11 @@ defmodule Table_WT_Conection do
   # card_taken podería ser first ou last
   def take(player_name, card_taken, position, reverse) do
     state = :ets.lookup(:game_state, "table")
+
     case state do
       [{"table"}] -> {:error, "Cannot scout no cards on the table"}
-      [_] -> process_take(player_name, card_taken, position, reverse, state) # Tengo que dar los puntos a la pers
+      # Tengo que dar los puntos a la pers
+      [_] -> process_take(player_name, card_taken, position, reverse, state)
     end
   end
 
@@ -204,6 +218,7 @@ defmodule Table_WT_Conection do
 
   def check_player_info(player_name) do
     exists_player = :ets.lookup(:game_state, player_name)
+
     case exists_player do
       [] -> {:error, "Player does not exists"}
       _ -> exists_player
@@ -220,6 +235,7 @@ defmodule Table_WT_Conection do
 
   def should_the_game_end?(player_name) do
     [{_, cards, points, point_cards}] = :ets.lookup(:game_state, player_name)
+
     case cards do
       [] -> the_game_ends()
       _ -> {:ok, "Nada que hacer el juego continua"}
@@ -227,17 +243,17 @@ defmodule Table_WT_Conection do
   end
 
   def the_game_ends() do
-    #calc_poinst
+    # calc_poinst
 
     :ets.delete(:game_state)
     {:final, "The game has ended"}
   end
 
-  #def calc_points() do
+  # def calc_points() do
   #  [{_, num_players, player_names}] = :ets.lookup(:game_state, "players")
-  #end
+  # end
 
-  def calc_point([h|_], result_array) do
+  def calc_point([h | _], result_array) do
     [{_, cards, points, point_cards}] = :ets.lookup(:game_state, h)
     real_points = length(point_cards) + points - length(cards)
     [{h, real_points} | result_array]

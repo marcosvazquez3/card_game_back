@@ -1,7 +1,6 @@
-#Interesante sobre supervisores dinámicos
-#https://elixirforum.com/t/difference-between-supervisors-and-dynamicsupervisors-what-am-i-missing/48821/3
+# Interesante sobre supervisores dinámicos
+# https://elixirforum.com/t/difference-between-supervisors-and-dynamicsupervisors-what-am-i-missing/48821/3
 defmodule TableSupervisor do
-
   use DynamicSupervisor
 
   @spec init(:ok) ::
@@ -30,15 +29,16 @@ defmodule TableSupervisor do
 
   def destroy_table(table_id) do
     :ets.delete(:game_state, table_id)
+
     if pid = Game.TableManager.get_table_pid(table_id) do
       DynamicSupervisor.terminate_child(__MODULE__, pid)
     else
-      :ok  # or log error/warning
+      # or log error/warning
+      :ok
     end
   end
 
   defp via_tuple(name) do
     {:via, Registry, {Registry.Table, name}}
   end
-
 end

@@ -1,11 +1,11 @@
 defmodule RouterManager do
-
   use Ecto.Schema
   import Ecto.Changeset
 
   schema "show" do
-    field :cards, {:array, :map} # They need to be validated one by one
-    field :player_id, :integer
+    # They need to be validated one by one
+    field(:cards, {:array, :map})
+    field(:player_id, :integer)
   end
 
   defp validate_cards(changeset) do
@@ -27,7 +27,6 @@ defmodule RouterManager do
         changeset
     end
   end
-
 
   # TODO pensar se esto é necesario aquí
   # defp validate_player_id_exists(changeset) do
