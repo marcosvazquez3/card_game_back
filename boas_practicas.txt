@@ -1,0 +1,44 @@
+? suele porse en funcións que devolven true or false
+! Se a función devolve un error de ejcución
+
+defmodule Calculator do
+    def add(a, b \\ 0), do: a + b # \\ permite por un valor base para o b
+end
+Substitue eso def add(a), do: add(a, 0)
+
+Esto:
+alias Geometry.Rectangle, as: Rectangle
+e esto:
+alias Geometry.Rectangle
+son o mesmo
+
+Os @ non son comentarios, os @moduledoc e @doc son técnicamente variables globales, constantes mais ben
+Estas dúas en concreto úsanse para documentación
+
+@spec area(number) :: number 
+def area(r), do: r*r*@pi
+Permite definir especificacións para as funcións area acepta un number e devolve un number
+
+
+This property can be used with Elixir’s short-circuit operators ||, &&, and !. The
+operator || returns the first expression that isn’t falsy:
+iex(1)> nil || false || 5 || true
+5
+
+Short-circuiting can be used for elegant operation chaining. For example, if you need
+to fetch a value from cache, a local disk, or a remote database, you can do something
+like this:
+read_cached() || read_from_disk() || read_from_database()
+
+
+The operator && returns the second expression but only if the first expression is
+truthy. Otherwise, it returns the first expression without evaluating the second one:
+iex(1)> true && 5
+5
+iex(2)> false && 5
+false
+iex(3)> nil && 5
+nil
+
+Similarly, you can use the operator && to ensure certain conditions are met:
+database_value = connection && read_data(connection)

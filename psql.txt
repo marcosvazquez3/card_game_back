@@ -1,0 +1,13 @@
+para iniciar o servidor de psql: sudo service postgresql start
+Para acceder ao servidor: sudo -u postgres psql
+Todo comando ten no terminal de postgres ten que ir con ; ao final
+Para cambiar a usuario postgres
+
+VIDEOS IMPORTANTE
+https://geoffreylessel.com/2016/from-zero-to-ecto-in-10-minutes/
+https://geoffreylessel.com/2016/using-mix-to-easily-create-an-ecto-repo/
+https://alchemist.camp/episodes/adding-ecto-postgres
+
+IMPORTANTE:
+
+Crear indexes por a coumnas que vou usar para buscar info

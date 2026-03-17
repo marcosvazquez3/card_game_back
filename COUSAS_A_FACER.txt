@@ -1,0 +1,4 @@
+Parece que o xogo funciona ben pero teño que meter a confirmación de que todo esté ben
+
+Teño que devolver o estado do xogo, que vay estar en lobby pero tamén os xogadores nese lobby,
+nada máis crealo solo eres ti.

@@ -1,0 +1,66 @@
+Teño case feita a lóxica do xogo, falta retocar o take un pouco, pero en vez de acabar
+con eso e facer 50 tests prefiro arreglalo doutra maneira.
+
+Teño que entender os structs primeiro
+
+1- Mirar ven as estructuras de datos e usar as que tocan ben, todo con ets no é boa idea
+    1.1- Por exemplo para os xogadores vamos facer un map que teña como keys os nomes. E non 
+    se permite a repetición
+2- Separar as funcións de table_without_conexion, cada cousa no seu lado, como toca
+3- Mirar o tema dos estados e facer a lóxica do xogo con respecto a ela
+
+
+https://hexdocs.pm/nebulex/Nebulex.html
+
+https://hexdocs.pm/phoenix_live_view/welcome.html#example
+
+O tema das conexións
+https://hexdocs.pm/phoenix_pubsub/Phoenix.PubSub.html
+
+CENTRARME EN:
+
+    Intentar ter para o día 23 algo funcional pa ensinarlle a Laura
+
+    Para agosto ter case funcionando todo sen base de datos
+
+    Revisar o tema da xeración das cartas
+
+Explicacións: 
+    Phoenix solo se utiliza no front, non no back
+
+    Sigo sen ter moita idea de como funciona pubsub, pero vamos centrarnos no front agora mesmo
+    todo o que queira probar pois probarase mockeando as chamadas a pubsub, non preocuparse
+
+    Sigo sen ter moi claro como vou meter a base de datos, pero vai entrar dalguna maneira.
+
+    Para usuarios gustaríame xuntalo con google pero tamén podo pedir ter unha base de datos para eso
+
+    Gustaríame poder meter repeticions pero non teño moi claro pa que así que vamos por orden
+
+    Importante, ejemplo de xogo
+    https://blog.appsignal.com/2019/08/13/elixir-alchemy-multiplayer-go-with-registry-pubsub-and-dynamic-supervisors.html
+
+
+Necesito empezar a mostar os endpoints. E si vou manter separado o back do front
+
+Empezar coa sesión de usuarios en back e endpoint antes
+
+Empezar coa memoria
+
+
+https://www.youtube.com/@ElixirMentor
+https://www.youtube.com/watch?v=UgQTcvdbccA
+
+https://chatgpt.com/g/g-68e55a886420819196f4d68036a5df1f-elixir-software-design-teams
+
+
+Sobre ecto
+https://www.youtube.com/watch?v=A6V3Ix2OIQQ
+
+Meter validacións para os turnos ou algunha forma de saber de quén é o turno de quén.
+
+Facer ramas e meter o commits ahí cada día
+
+Mirar os dynamic supervisors para o inicio de sesión de usuarios
+
+Vou usar postgres sql pola escalibilidade https://runcloud.io/blog/sqlite-vs-mysql-vs-postgresql

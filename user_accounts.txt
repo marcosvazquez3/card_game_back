@@ -1,0 +1,634 @@
+In **Elixir**, user account management is typically handled through a combination of **Ecto (for persistence)**, **Phoenix (for web layer)**, and optionally **Guardian or Pow (for authentication and session management)**. Here’s a structured overview of how to manage user accounts effectively:
+
+---
+
+### 🧩 1. **Define the User Schema (Ecto)**
+
+Create a schema representing your users in `lib/my_app/accounts/user.ex`:
+
+```elixir
+defmodule MyApp.Accounts.User do
+  use Ecto.Schema
+  import Ecto.Changeset
+  alias Argon2, as: PasswordHasher
+
+  schema "users" do
+    field :email, :string
+    field :hashed_password, :string
+    field :name, :string
+    field :role, :string, default: "user"
+    field :confirmed_at, :utc_datetime
+
+    timestamps()
+  end
+
+  def registration_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:email, :name, :password])
+    |> validate_required([:email, :password])
+    |> validate_format(:email, ~r/@/)
+    |> unique_constraint(:email)
+    |> put_password_hash()
+  end
+
+  defp put_password_hash(changeset) do
+    if password = get_change(changeset, :password) do
+      put_change(changeset, :hashed_password, PasswordHasher.hash_pwd_salt(password))
+    else
+      changeset
+    end
+  end
+end
+```
+
+---
+
+### ⚙️ 2. **Create the Accounts Context**
+
+Encapsulate all user-related operations in `lib/my_app/accounts.ex`:
+
+```elixir
+defmodule MyApp.Accounts do
+  alias MyApp.Repo
+  alias MyApp.Accounts.User
+  alias Argon2
+
+  def register_user(attrs) do
+    %User{}
+    |> User.registration_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def authenticate_user(email, password) do
+    case Repo.get_by(User, email: email) do
+      nil -> {:error, :not_found}
+      user -> if Argon2.verify_pass(password, user.hashed_password), do: {:ok, user}, else: {:error, :unauthorized}
+    end
+  end
+
+  def list_users, do: Repo.all(User)
+  def get_user!(id), do: Repo.get!(User, id)
+end
+```
+
+---
+
+### 🔐 3. **Handle Authentication**
+
+Two common options:
+
+* **Guardian** → JWT-based authentication (good for APIs)
+* **Pow** → Session-based authentication (good for web apps)
+
+For example, Guardian setup:
+
+```elixir
+defmodule MyApp.Auth.Guardian do
+  use Guardian, otp_app: :my_app
+  alias MyApp.Accounts
+
+  def subject_for_token(user, _claims), do: {:ok, to_string(user.id)}
+  def resource_from_claims(%{"sub" => id}), do: {:ok, Accounts.get_user!(id)}
+end
+```
+
+---
+
+### 📬 4. **Optional Features**
+
+* **Email confirmation** (with Bamboo or Swoosh)
+* **Password reset** tokens
+* **Role-based authorization**
+* **Account lockout** on failed attempts
+
+---
+
+### 🧠 Best Practices
+
+* Use **context boundaries** (e.g., `Accounts`, `Auth`) to keep logic modular.
+* Hash passwords with **Argon2** or **bcrypt_elixir**.
+* Validate **uniqueness** and **email format** at both DB and changeset levels.
+* Avoid storing plaintext passwords **anywhere**.
+
+---
+
+Would you like me to create a **Mermaid diagram** showing the flow (registration → authentication → session management)?
+
+
+
+SOBRE AS LISTAS DE AMIGOS:
+
+A friend list is usually modeled as a **many-to-many relationship between users**, often with a status (pending, accepted, blocked, etc.).
+
+Here are a few good, real-world ways to design it in PostgreSQL.
+
+---
+
+## ✅ Basic Idea
+
+You have:
+
+* `users`
+* `friends` (relationship table)
+
+Each row represents a relationship between two users.
+
+---
+
+## ✅ Simple Friend Table
+
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL
+);
+```
+
+```sql
+CREATE TABLE friendships (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    friend_id BIGINT NOT NULL REFERENCES users(id),
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT now(),
+
+    CONSTRAINT no_self_friend CHECK (user_id <> friend_id),
+    CONSTRAINT unique_friendship UNIQUE (user_id, friend_id)
+);
+```
+
+---
+
+## ✅ Prevent duplicates both directions
+
+Since friendships are mutual, you don’t want:
+
+```
+(1,2)
+(2,1)
+```
+
+You can enforce ordering:
+
+```sql
+ALTER TABLE friendships
+ADD CONSTRAINT ordered_users CHECK (user_id < friend_id);
+```
+
+And then always insert smaller id first:
+
+```sql
+INSERT INTO friendships (user_id, friend_id, status)
+VALUES (LEAST(1,2), GREATEST(1,2), 'accepted');
+```
+
+---
+
+## ✅ Query friend list
+
+```sql
+SELECT 
+    CASE 
+        WHEN user_id = 1 THEN friend_id
+        ELSE user_id
+    END AS friend_id
+FROM friendships
+WHERE (user_id = 1 OR friend_id = 1)
+AND status = 'accepted';
+```
+
+---
+
+## ✅ With requests system
+
+Statuses usually include:
+
+* `pending`
+* `accepted`
+* `blocked`
+* `removed`
+
+Example:
+
+```sql
+INSERT INTO friendships (user_id, friend_id, status)
+VALUES (LEAST(1,2), GREATEST(1,2), 'pending');
+```
+
+Then update:
+
+```sql
+UPDATE friendships
+SET status = 'accepted'
+WHERE user_id = 1 AND friend_id = 2;
+```
+
+---
+
+## ✅ Alternative: Directional model
+
+If you want follower-style (like Twitter):
+
+```sql
+CREATE TABLE follows (
+    user_id BIGINT REFERENCES users(id),
+    follows_id BIGINT REFERENCES users(id),
+    PRIMARY KEY (user_id, follows_id)
+);
+```
+
+Then mutual = friendship.
+
+---
+
+## ✅ Indexing (important)
+
+```sql
+CREATE INDEX idx_friendships_user ON friendships(user_id);
+CREATE INDEX idx_friendships_friend ON friendships(friend_id);
+```
+
+---
+
+## ✅ Extra fields you may want
+
+```sql
+muted BOOLEAN DEFAULT false,
+blocked BOOLEAN DEFAULT false,
+accepted_at TIMESTAMP
+```
+
+---
+
+## ⚡ Bonus: Faster symmetric design
+
+Instead of two rows per friendship, store one row only:
+
+```sql
+(user_low, user_high)
+```
+
+Which scales very well.
+
+---
+
+## ✅ Example full design
+
+```sql
+CREATE TABLE friendships (
+    user_low BIGINT NOT NULL,
+    user_high BIGINT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT now(),
+    PRIMARY KEY (user_low, user_high),
+    CHECK (user_low < user_high),
+    FOREIGN KEY (user_low) REFERENCES users(id),
+    FOREIGN KEY (user_high) REFERENCES users(id)
+);
+```
+
+---
+
+## 🎯 Best practice summary
+
+| Feature       | Use               |
+| ------------- | ----------------- |
+| Symmetric     | `CHECK (u1 < u2)` |
+| Status        | yes               |
+| Indexes       | yes               |
+| No duplicates | yes               |
+| No self       | yes               |
+
+---
+
+If you tell me:
+
+* Is this for a game, social network, chat app, etc?
+* Do you need friend requests?
+* Blocking?
+* Followers instead?
+
+…I can tailor the schema exactly for your case 🙂
+
+
+Sobre los stados de las relaciones de usuarios:
+
+Yes — and you’re thinking in the right direction 👍
+
+If one game can have **many players**, and each player can be in **many games**, then you need a **join table** between games and players.
+
+This is the same many-to-many pattern as the friend list.
+
+---
+
+## ✅ The 3 tables you want
+
+1️⃣ Players
+2️⃣ Games (history)
+3️⃣ Game players (join table)
+
+---
+
+## ✅ Example schema
+
+### Players
+
+```sql
+CREATE TABLE players (
+    id BIGSERIAL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE
+);
+```
+
+---
+
+### Games (history)
+
+```sql
+CREATE TABLE games (
+    id BIGSERIAL PRIMARY KEY,
+    started_at TIMESTAMP DEFAULT now(),
+    ended_at TIMESTAMP,
+    game_mode TEXT,
+    winner_id BIGINT REFERENCES players(id)
+);
+```
+
+---
+
+### Game participants
+
+```sql
+CREATE TABLE game_players (
+    game_id BIGINT NOT NULL REFERENCES games(id),
+    player_id BIGINT NOT NULL REFERENCES players(id),
+    score INT,
+    position INT,
+    joined_at TIMESTAMP DEFAULT now(),
+
+    PRIMARY KEY (game_id, player_id)
+);
+```
+
+---
+
+## ✅ Why you need the join table
+
+Because:
+
+* A game has many players
+* A player plays many games
+* You can store **per-game stats** (score, kills, team, etc.)
+* You avoid duplicated data
+* You keep the model clean
+
+---
+
+## ✅ Example inserts
+
+```sql
+INSERT INTO games (game_mode) VALUES ('ranked');
+```
+
+```sql
+INSERT INTO game_players (game_id, player_id, score)
+VALUES 
+(1, 10, 150),
+(1, 12, 90),
+(1, 15, 200);
+```
+
+---
+
+## ✅ Query players in a game
+
+```sql
+SELECT p.*
+FROM game_players gp
+JOIN players p ON p.id = gp.player_id
+WHERE gp.game_id = 1;
+```
+
+---
+
+## ✅ Query games for a player
+
+```sql
+SELECT g.*
+FROM game_players gp
+JOIN games g ON g.id = gp.game_id
+WHERE gp.player_id = 10;
+```
+
+---
+
+## ✅ Bonus: teams, stats, etc.
+
+You can extend `game_players`:
+
+```sql
+team INT,
+kills INT,
+deaths INT,
+assists INT,
+result TEXT
+```
+
+This is where most game-specific data belongs.
+
+---
+
+## ✅ Mental model
+
+```
+players <-- game_players --> games
+```
+
+The middle table describes the participation.
+
+---
+
+## ✅ When you *don’t* need it
+
+Only if each game always has exactly one player (rare).
+
+---
+
+## 🎯 In short
+
+> **Yes — you always use a join table to list all players in each game, and store per-game data.**
+
+---
+
+If you tell me:
+
+* Is it multiplayer?
+* Fixed teams?
+* Rankings?
+* Replays?
+
+…I can design a more realistic game-history schema for you 🎮
+
+
+
+Conectarse a postgresql desde elixir:
+
+To connect to PostgreSQL from Elixir, you usually use a driver or a database wrapper. The most common and “Elixir way” options are **Ecto** (high-level) and **Postgrex** (low-level).
+
+I’ll show both, starting with the recommended one.
+
+---
+
+# ✅ Recommended: Use Ecto
+
+Ecto gives you migrations, schemas, queries, pooling, etc.
+
+---
+
+## 1️⃣ Add dependencies
+
+In `mix.exs`:
+
+```elixir
+defp deps do
+  [
+    {:ecto_sql, "~> 3.11"},
+    {:postgrex, ">= 0.0.0"}
+  ]
+end
+```
+
+Then:
+
+```bash
+mix deps.get
+```
+
+---
+
+## 2️⃣ Create a Repo
+
+```bash
+mix ecto.gen.repo -r MyApp.Repo
+```
+
+Configure it in `config/config.exs`:
+
+```elixir
+config :my_app, MyApp.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "my_app_dev",
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
+```
+
+Add to supervision tree in `application.ex`:
+
+```elixir
+children = [
+  MyApp.Repo
+]
+```
+
+---
+
+## 3️⃣ Create schema
+
+```elixir
+defmodule MyApp.User do
+  use Ecto.Schema
+
+  schema "users" do
+    field :name, :string
+    timestamps()
+  end
+end
+```
+
+---
+
+## 4️⃣ Insert example
+
+```elixir
+%MyApp.User{name: "John"}
+|> MyApp.Repo.insert()
+```
+
+---
+
+## 5️⃣ Query example
+
+```elixir
+MyApp.Repo.all(MyApp.User)
+```
+
+---
+
+# ✅ Lightweight: Use Postgrex directly
+
+If you just need a raw connection:
+
+---
+
+## 1️⃣ Add dep
+
+```elixir
+{:postgrex, ">= 0.0.0"}
+```
+
+---
+
+## 2️⃣ Connect
+
+```elixir
+{:ok, pid} =
+  Postgrex.start_link(
+    hostname: "localhost",
+    username: "postgres",
+    password: "postgres",
+    database: "my_app"
+  )
+```
+
+---
+
+## 3️⃣ Query
+
+```elixir
+Postgrex.query!(pid, "SELECT * FROM users", [])
+```
+
+---
+
+## ✅ Which should you use?
+
+| Use case        | Pick     |
+| --------------- | -------- |
+| App / Phoenix   | Ecto     |
+| Simple script   | Postgrex |
+| Need migrations | Ecto     |
+| Raw SQL only    | Postgrex |
+
+---
+
+# ⚡ Pro tip
+
+If you're using Phoenix, Ecto is already wired in.
+
+---
+
+If you tell me:
+
+* Are you using **Phoenix**?
+* Do you need **migrations**?
+* Is this a **script** or **web app**?
+
+…I can tailor the setup exactly for your project 🙂.
+
+
+Video sobre como usar elixir con postgres: https://alchemist.camp/episodes/adding-ecto-postgres
+
+
+mix ecto.gen.repo generates the Ecto Repo module and config so your Elixir app can connect to and query a database.
