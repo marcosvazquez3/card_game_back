@@ -21,6 +21,7 @@ defmodule CardGameBackPhoenix.Application do
       # {Registry,
       #  keys: :duplicate, name: Registry.PubSub, partitions: System.schedulers_online()},
       CardGameBackPhoenix.TableSupervisor,
+      CardGameBackPhoenixWeb.Presence,
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

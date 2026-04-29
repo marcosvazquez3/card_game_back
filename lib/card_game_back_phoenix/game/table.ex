@@ -3,7 +3,10 @@
 #Pode usarse o GenServer
 #https://hexdocs.pm/elixir/1.12/GenServer.html
 
-defmodule CardGameBackPhoenixGame.Table do
+# TODO Facer refactor desto, a lógica ten que salir fora deste archivo
+# Cambiar os returns, non podo facer return da info toda de partida porque a lío
+# Básicamente devolvolles toda a info da mesa a todo o mundo
+defmodule CardGameBackPhoenix.Game.Table do
 
   use GenServer
   alias CardGameBackPhoenix.Game
@@ -27,6 +30,7 @@ defmodule CardGameBackPhoenixGame.Table do
       player_list: %{},
       table_cards_count: 0,
       table_cards: [],
+      turn: "unknown",
     }
     # Necesito crear unha estructura que garde a información completa da partida
     {:ok, init_data}
@@ -63,8 +67,7 @@ defmodule CardGameBackPhoenixGame.Table do
 
 
   def add_player(table_id, player_name) do
-    pid = Game.TableManager.get_table_pid(table_id)
-    GenServer.call(pid, {:add_player, player_name})
+    GenServer.call(via_tuple(table_id), {:add_player, player_name})
   end
 
   # Non necesita o table registry porque solo siver para decidir o proceso a cal enviarlle o call
@@ -202,8 +205,7 @@ defmodule CardGameBackPhoenixGame.Table do
   end
 
   def show(table_id, cards, player_name) do
-    pid = Game.TableManager.get_table_pid(table_id)
-    GenServer.call(pid, {:show, cards, player_name})
+    GenServer.call(via_tuple(table_id), {:show, cards, player_name})
   end
 
   def get_card(card, [], table_to_return) do
@@ -229,8 +231,7 @@ defmodule CardGameBackPhoenixGame.Table do
 
 
   def scout(table_id, card, position, player_name) do
-    pid = Game.TableManager.get_table_pid(table_id)
-    GenServer.call(pid, {:scout, card, position, player_name})
+    GenServer.call(via_tuple(table_id), {:scout, card, position, player_name})
   end
 
 
@@ -241,8 +242,12 @@ defmodule CardGameBackPhoenixGame.Table do
 
 
   def get_table_state(table_id) do
-    pid = Game.TableManager.get_table_pid(table_id)
-    GenServer.call(pid, :get_state)
+    GenServer.call(via_tuple(table_id), :get_state)
+  end
+
+  # PREGUNTARLLE A LAURA SOBRE ESTO
+  def send_action(table_id, action) do
+    GenServer.call(via_tuple(table_id), action)
   end
 
   def via_tuple(table_id), do: {:via, Registry, {Registry.Table, table_id}}

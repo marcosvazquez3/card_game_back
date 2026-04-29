@@ -64,3 +64,18 @@ Facer ramas e meter o commits ahí cada día
 Mirar os dynamic supervisors para o inicio de sesión de usuarios
 
 Vou usar postgres sql pola escalibilidade https://runcloud.io/blog/sqlite-vs-mysql-vs-postgresql
+
+
+Para as conexións ao xogo vamos usar channels: 
+    - Docu: https://hexdocs.pm/phoenix/channels.html
+    - Xogo de ejemplo: https://blog.miguelcoba.com/building-a-game-with-phoenix-channels
+    - Repo: https://github.com/miguelcoba/phoenix_channels_game
+    - Exemplo: https://oneuptime.com/blog/post/2026-02-03-elixir-phoenix-channels/view
+
+
+Por ahora estou facendo as cousas sin moito control de errores, cando empece cos tests de todo
+vou empezar a meter os errores donde o necesite
+
+Parece que me falta ben definir os estados do xogo. Porque por exemplo o start_game
+de taable.ex non o uso, e necesito un momento donde poder decidir o momento de empezar
+o xogo, porque teño que esperar a que todos estén unidos antes de empezar

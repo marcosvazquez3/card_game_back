@@ -1,5 +1,8 @@
 defmodule CardGameBackPhoenixWeb.Router do
   use CardGameBackPhoenixWeb, :router
+
+  import CardGameBackPhoenixWeb.UserAuth
+  alias CardGameBackPhoenixWeb.GameController
   alias CardGameBackPhoenix.Router, as: LegacyRouter
 
   pipeline :browser do
@@ -9,6 +12,7 @@ defmodule CardGameBackPhoenixWeb.Router do
     plug :put_root_layout, html: {CardGameBackPhoenixWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_scope_for_user
   end
 
   pipeline :api do
@@ -23,6 +27,10 @@ defmodule CardGameBackPhoenixWeb.Router do
 
   scope "/legacy" do
     forward "/", LegacyRouter
+  end
+
+  scope "/game" do
+    get "/create", GameController, :create_game
   end
 
   # Other scopes may use custom stacks.
@@ -45,5 +53,31 @@ defmodule CardGameBackPhoenixWeb.Router do
       live_dashboard "/dashboard", metrics: CardGameBackPhoenixWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  ## Authentication routes
+
+  scope "/", CardGameBackPhoenixWeb do
+    pipe_through [:browser, :redirect_if_user_is_authenticated]
+
+    get "/users/register", UserRegistrationController, :new
+    post "/users/register", UserRegistrationController, :create
+  end
+
+  scope "/", CardGameBackPhoenixWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    get "/users/settings", UserSettingsController, :edit
+    put "/users/settings", UserSettingsController, :update
+    get "/users/settings/confirm-email/:token", UserSettingsController, :confirm_email
+  end
+
+  scope "/", CardGameBackPhoenixWeb do
+    pipe_through [:browser]
+
+    get "/users/log-in", UserSessionController, :new
+    get "/users/log-in/:token", UserSessionController, :confirm
+    post "/users/log-in", UserSessionController, :create
+    delete "/users/log-out", UserSessionController, :delete
   end
 end
