@@ -8,9 +8,9 @@ config :bcrypt_elixir, :log_rounds, 1
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :card_game_back_phoenix, CardGameBackPhoenix.Database.Repo,
-  username: "postgres",
-  password: "postgres",
+config :card_game_back_phoenix, CardGameBackPhoenix.Repo,
+  username: "card_game_user",
+  password: "card_game_user",
   hostname: "localhost",
   database: "card_game_back_phoenix_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,

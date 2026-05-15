@@ -4,10 +4,17 @@ defmodule CardGameBackPhoenix.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :user_name, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    many_to_many :friends_as_user1, CardGameBackPhoenix.Accounts.User,
+      join_through: CardGameBackPhoenix.Schemas.UsersRelationships,
+      join_keys: [user1_id: :id, user2_id: :id]
+    many_to_many :friends_as_user2, CardGameBackPhoenix.Accounts.User,
+      join_through: CardGameBackPhoenix.Schemas.UsersRelationships,
+      join_keys: [user2_id: :id, user1_id: :id]
 
     timestamps(type: :utc_datetime)
   end
@@ -25,8 +32,9 @@ defmodule CardGameBackPhoenix.Accounts.User do
   """
   def email_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email])
+    |> cast(attrs, [:email, :user_name])
     |> validate_email(opts)
+    |> validate_username()
   end
 
   defp validate_email(changeset, opts) do
@@ -54,6 +62,11 @@ defmodule CardGameBackPhoenix.Accounts.User do
     else
       changeset
     end
+  end
+
+  defp validate_username(changeset) do
+    changeset
+    |> validate_length(:user_name, min: 2, max: 20)
   end
 
   @doc """

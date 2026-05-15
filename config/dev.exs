@@ -1,7 +1,7 @@
 import Config
 
 # Configure your database
-config :card_game_back_phoenix, CardGameBackPhoenix.Database.Repo,
+config :card_game_back_phoenix, CardGameBackPhoenix.Repo,
   database: "card_game_dev",
   username: "card_game_user",
   password: "card_game_user",

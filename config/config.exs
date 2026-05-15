@@ -21,7 +21,7 @@ config :card_game_back_phoenix, :scopes,
   ]
 
 config :card_game_back_phoenix,
-  ecto_repos: [CardGameBackPhoenix.Database.Repo],
+  ecto_repos: [CardGameBackPhoenix.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint

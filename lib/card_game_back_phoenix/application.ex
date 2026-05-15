@@ -9,7 +9,7 @@ defmodule CardGameBackPhoenix.Application do
   def start(_type, _args) do
     children = [
       CardGameBackPhoenixWeb.Telemetry,
-      CardGameBackPhoenix.Database.Repo,
+      CardGameBackPhoenix.Repo,
       {DNSCluster, query: Application.get_env(:card_game_back_phoenix, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: CardGameBackPhoenix.PubSub},
       # Start a worker by calling: CardGameBackPhoenix.Worker.start_link(arg)

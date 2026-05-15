@@ -5,12 +5,12 @@ defmodule Test_Table do
   use ExUnit.Case, async: true
   import Mimic
   # import ExUnit.CaptureLog
-  doctest Game.Table
+  doctest CardGameBackPhoenix.Game.Table
   setup :set_mimic_global
   setup :verify_on_exit!
 
   test "Testing Table initialization" do
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     state = GenServer.call(pid, :get_state)
     assert {
       "current state",
@@ -25,7 +25,7 @@ defmodule Test_Table do
   end
 
   test "Testing adding a player" do
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     GenServer.call(pid, {:add_player, "pepe"})
     state = GenServer.call(pid, :get_state)
     assert {
@@ -44,7 +44,7 @@ defmodule Test_Table do
 
 
   test "Testing adding two player" do
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     GenServer.call(pid, {:add_player, "name1"})
     GenServer.call(pid, {:add_player, "name2"})
     state = GenServer.call(pid, :get_state)
@@ -85,7 +85,7 @@ defmodule Test_Table do
         {2, 1}, {2, 1}, {2, 1}, {2, 1}]
       ]
     end)
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     GenServer.call(pid, {:add_player, "name1"})
     GenServer.call(pid, {:add_player, "name2"})
     GenServer.call(pid, :start_game)
@@ -125,7 +125,7 @@ defmodule Test_Table do
         {2, 1}, {2, 1}, {2, 1}, {2, 1}]
       ]
     end)
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     GenServer.call(pid, {:add_player, "name1"})
     GenServer.call(pid, {:add_player, "name2"})
     GenServer.call(pid, :start_game)
@@ -167,7 +167,7 @@ defmodule Test_Table do
         {2, 1}, {2, 1}, {2, 1}, {2, 1}]
       ]
     end)
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     GenServer.call(pid, {:add_player, "name1"})
     GenServer.call(pid, {:add_player, "name2"})
     GenServer.call(pid, :start_game)
@@ -209,7 +209,7 @@ defmodule Test_Table do
         {2, 1}, {2, 1}, {2, 1}, {2, 1}]
       ]
     end)
-    {_, pid} = Game.Table.start_link(:testing)
+    {_, pid} = CardGameBackPhoenix.Game.Table.start_link(:testing)
     GenServer.call(pid, {:add_player, "name1"})
     GenServer.call(pid, {:add_player, "name2"})
     GenServer.call(pid, :start_game)

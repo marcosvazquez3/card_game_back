@@ -13,30 +13,30 @@ defmodule CardGameBackPhoenix.Game.Table do
 
   # Cliente
 
-  def start_link(table_registry) do
-    # Este table id ya es el registry
-    GenServer.start_link(__MODULE__, table_registry, name: table_registry)
-    # Este start_link llama a init
+  def start_link(table_id) do
+    GenServer.start_link(__MODULE__, table_id, name: via_tuple(table_id))
   end
-
 
   #Servidor
 
   @impl true
-  def init(table_registry) do
+  def init(table_id) do
+    table_registry = via_tuple(table_id)
     init_data = %{
       table_registry: table_registry,
       player_count: 0,
       player_list: %{},
       table_cards_count: 0,
       table_cards: [],
+      player_order: [],
       turn: "unknown",
     }
     # Necesito crear unha estructura que garde a información completa da partida
     {:ok, init_data}
   end
 
-  def start_game(table_registry) do
+  def start_game(table_id) do
+    table_registry = via_tuple(table_id)
     GenServer.call(table_registry, :start_game)
   end
 
@@ -73,11 +73,26 @@ defmodule CardGameBackPhoenix.Game.Table do
   # Non necesita o table registry porque solo siver para decidir o proceso a cal enviarlle o call
   def handle_call({:add_player, player_name}, _from, state) do
     player_nested_map = Game.PlayerList.add(player_name, state.player_list)
-    new_state = %{state | player_list: player_nested_map, player_count: Map.keys(player_nested_map) |> length()}
+    {player_order, turn} = add_player_to_player_order(state.player_order, player_name)
+    aux_state =
+      case turn do
+        nil -> state
+        _ -> %{state | turn: turn}
+      end
+    new_state = %{aux_state | player_list: player_nested_map, player_count: Map.keys(player_nested_map) |> length(), player_order: player_order}
     {:reply, "player added", new_state}
   end
 
+  defp add_player_to_player_order([], player_id) do
+    {[player_id], player_id}
+  end
 
+  defp add_player_to_player_order(player_order, player_id) do
+    {[player_id | player_order], nil}
+  end
+
+
+  @spec check_cards(any(), any(), any()) :: list()
   def check_cards(cards, player_name, player_list) do
     player = Game.PlayerList.get_player(player_name, player_list)
 
@@ -182,6 +197,14 @@ defmodule CardGameBackPhoenix.Game.Table do
     end
   end
 
+
+  defp is_player_turn(player_id, state) do
+    case state.turn do
+      player_id -> true
+      _ -> false
+    end
+  end
+
   def is_string([]) do false end
 
   def is_string(x) when is_binary(x), do: String.valid?(x)
@@ -198,9 +221,10 @@ defmodule CardGameBackPhoenix.Game.Table do
   end
 
   def handle_call({:show, cards, player_name}, _from, state) do
-    case is_a_valid_hand?(cards) and  is_player_hand_good_enough?(state.table_cards, cards) do
+
+    case is_player_turn(player_name, state) and is_a_valid_hand?(cards) and  is_player_hand_good_enough?(state.table_cards, cards) do
       true -> show_action(cards, player_name, state, state.player_list[player_name].cards)
-      false -> {:reply, :error, "cards invalid to show"}
+      false -> {:reply, :error, "turn not valid"}
     end
   end
 
@@ -222,11 +246,15 @@ defmodule CardGameBackPhoenix.Game.Table do
   end
 
   def handle_call({:scout, card, position, player_name}, _from, state) do
-    new_table_state = get_card(card, state.table_cards, [])
-    updated_player_cards = List.insert_at(state.player_list[player_name].cards, position, card)
-    new_state_player_update = put_in(state.player_list[player_name].cards, updated_player_cards)
-    new_state = %{new_state_player_update | table_cards: new_table_state, table_cards_count: length(new_table_state)}
-    {:reply, "Game created", new_state}
+    if is_player_turn(player_name, state) do
+      new_table_state = get_card(card, state.table_cards, [])
+      updated_player_cards = List.insert_at(state.player_list[player_name].cards, position, card)
+      new_state_player_update = put_in(state.player_list[player_name].cards, updated_player_cards)
+      new_state = %{new_state_player_update | table_cards: new_table_state, table_cards_count: length(new_table_state)}
+      {:reply, "Game created", new_state}
+    else
+      {:reply, "Not your turn", state}
+    end
   end
 
 

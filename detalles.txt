@@ -79,3 +79,18 @@ vou empezar a meter os errores donde o necesite
 Parece que me falta ben definir os estados do xogo. Porque por exemplo o start_game
 de taable.ex non o uso, e necesito un momento donde poder decidir o momento de empezar
 o xogo, porque teño que esperar a que todos estén unidos antes de empezar
+
+
+
+Sobre a actualización de información en repo:
+Non me gusta que requira un changeset e que pa conseguilo teña que facer un get a sql
+
+
+Contexto: Como contexto tecnoloxico falar de vean, elixir, despois framework falar de stack overflow sobre as tecnoloxías más usadas, caso de uso motivador en vez de xogo de cartas
+
+Podería usar o tema de que estudei TI sobre como explorar as conexión coa escalabilidade na introducción
+
+Por exemplo sobre os channels podemos explicar o contexto xeral de elixir e despois falar de todo
+
+
+Acordarme da metodoloxía 

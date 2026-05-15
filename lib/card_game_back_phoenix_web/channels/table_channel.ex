@@ -2,25 +2,38 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
   use CardGameBackPhoenixWeb, :channel
   alias CardGameBackPhoenix.Game.Table
   alias CardGameBackPhoenix.Game.TableManager
-  alias CardGameBackPhoenix.TableSupervisor
+  alias CardGameBackPhoenix.Utils.Tables
 
 
   # Ahora el join solo indica que te has unido a la lobby
   # Orden, os xogadores van unirse ao game cunha chamada https
   # esto vai crear o game_id porque vai generar a entrada na db
   # Despois de recibir esta reposta o front vai unirse ao channels directamente
-  def join("table:" <> table_id, _payload, socket) do
-    table_id = socket.assigns.table_id
-    if authorized?(socket.assigns.user_id, table_id) do
-      case TableManager.get_table_db(table_id) do
-        nil -> {:error, :not_found}
-        _game -> {:ok, assign(socket, :table_id, table_id)}
-      end
-    else
-      {:error, %{reason: "unauthorized"}}
+  def join("table:" <> table_id_str, _payload, socket) do
+    table_id = String.to_integer(table_id_str)
+    case TableManager.get_table_db(table_id) do
+      nil ->
+        {:error, %{reason: "table_not_found"}}
+      table ->
+        if authorized?(socket.assigns.user_id, table) do
+          send(self(), :after_join)
+          {:ok, assign(socket, :table_id, table_id)}
+        else
+          {:error, %{reason: "unauthorized"}}
+        end
     end
   end
 
+  def handle_info(:after_join, socket) do
+    {:ok, _} = CardGameBackPhoenixWeb.Presence.track(socket, socket.assigns.user_id, %{
+      user_id: socket.assigns.user_id,
+      online_at: System.system_time(:second)
+    })
+    push(socket, "presence_state", CardGameBackPhoenixWeb.Presence.list(socket))
+    {:noreply, socket}
+  end
+
+  # Aínda non sei onde o vou usar
   def handle_info(:lobby_timeout, socket) do
     push(socket, "error", %{reason: "Game expired due to inactivity"})
     {:stop, :normal, socket}
@@ -31,21 +44,24 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
   # que a generará unha soa persoan, xa se vai generar un uuid
   # que despois usaremos na table_id
   # O username vai vir directamente no socket vaise asignar directamente no momento do logging
+  # FALTAN VALIDACIÓNS PA CONDICIÓNS DE CARREIRA
   def handle_in("start_game", _payload, socket) do
+    topic = socket.topic
+    presences = CardGameBackPhoenixWeb.Presence.list(topic)
+    player_ids =
+      presences
+      |> Map.keys()
+      |> Enum.map(&String.to_integer/1)
     table_id = socket.assigns.table_id
-    case TableManager.whereis(table_id) do
-      nil ->
-        TableSupervisor.new_game(table_id)
-        TableManager.join_table(table_id, socket.assigns.username)
-      _pid ->
-        TableManager.join_table(table_id, socket.assigns.username)
+    case Tables.start_game(table_id, player_ids) do
+      {:ok, _pid} ->
+        state = Table.get_table_state(table_id)
+        IO.inspect(state)
+        new_socket = assign(socket, :phase, :running)
+        broadcast!(new_socket, "game_started", %{status: "running"})
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
     end
-    broadcast!(socket, "game_started", %{})
-    {:reply, :ok, socket}
-    new_socket = assign(socket, :phase, :running)
-    # O do mapa mólame xD
-    broadcast!(socket, "game_started", %{map: "desert_map"})
-    {:noreply, new_socket}
   end
 
   def handle_in("scout", %{"cards" => cards, "position" => pos}, socket) do
@@ -54,7 +70,15 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
 
     case Table.scout(table_id, cards, pos, player_name) do
       :ok ->
-        broadcast!(socket, "player_scouted", %{player: player_name, position: pos})
+        current_state = Table.get_table_state(table_id)
+        broadcast!(
+          socket, "player_scouted",
+          %{
+            player: player_name,
+            cards_in_hand: current_state.player_list[player_name].cards,
+            table_state: current_state.table_cards
+          }
+        )
         {:reply, :ok, socket}
       {:error, reason} ->
         {:reply, {:error, %{message: reason}}, socket}

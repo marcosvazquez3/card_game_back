@@ -1,5 +1,6 @@
 defmodule CardGameBackPhoenix.Game.PlayerList do
 
+  alias CardGameBackPhoenix.Game.Player
   # Esto sería mais ben player info
   # defstruct [%Player{cards: [], player_id: 2, player_name: "name2", pointcards: [], points: 0},%Player{cards: [], player_id: 1, player_name: "name1", pointcards: [], points: 0}]
   # defstruct, cambiar la estructura de los jugadores, tiene que ser un diccionario
@@ -13,7 +14,7 @@ defmodule CardGameBackPhoenix.Game.PlayerList do
     if Map.has_key?(player_nested_map, player_name) do
       {:error, :name_taken}
     else
-      Map.put(player_nested_map, player_name, Game.Player.new(player_name))
+      Map.put(player_nested_map, player_name, Player.new(player_name))
     end
   end
 
