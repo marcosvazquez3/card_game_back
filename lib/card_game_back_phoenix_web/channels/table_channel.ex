@@ -43,7 +43,7 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
   # O table_id vai vir dado, cando a primeira persoa lle de a crear game
   # que a generará unha soa persoan, xa se vai generar un uuid
   # que despois usaremos na table_id
-  # O username vai vir directamente no socket vaise asignar directamente no momento do logging
+  # O user_id vai vir directamente no socket vaise asignar directamente no momento do logging
   # FALTAN VALIDACIÓNS PA CONDICIÓNS DE CARREIRA
   def handle_in("start_game", _payload, socket) do
     topic = socket.topic
@@ -55,27 +55,61 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
     table_id = socket.assigns.table_id
     case Tables.start_game(table_id, player_ids) do
       {:ok, _pid} ->
-        state = Table.get_table_state(table_id)
-        IO.inspect(state)
         new_socket = assign(socket, :phase, :running)
         broadcast!(new_socket, "game_started", %{status: "running"})
+        {:noreply, new_socket}
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
     end
   end
 
-  def handle_in("scout", %{"cards" => cards, "position" => pos}, socket) do
-    player_name = socket.assigns.username
+  def handle_in("get_user_state", _payload, socket) do
+    # Necesito validación para que solo o usuario poida pedir o seu estado
+    table_id = socket.assigns.table_id
+    player_id = socket.assigns.user_id
+    clean_state = Table.get_user_state(table_id, player_id)
+    {:reply, {:ok, clean_state}, socket}
+  end
+
+  def handle_in("select_orientation", %{"flipped" => should_flip}, socket) do
+    table_id = socket.assigns.table_id
+    user_id = socket.assigns.user_id
+    if should_flip do
+      Table.flip_initial_hand(table_id, user_id)
+    end
+    Table.mark_player_ready(table_id, user_id)
+    case Table.all_players_ready?(table_id) do
+      {true, turn} -> broadcast!(socket, "orientation_fase_ended", %{turn: turn})
+      {false, _turn} -> push(socket, "orientation_locked", %{success: true})
+    end
+    {:noreply, socket}
+  end
+
+  def handle_in("scout", %{"where" => "beginning", "hand_position" => hand_position, "flip" => true}, socket) do
+    process_scout_action(:beginning, hand_position, true, socket)
+  end
+
+  def handle_in("scout", %{"where" => "end", "hand_position" => hand_position, "flip" => false}, socket) do
+    process_scout_action(:end, hand_position, false, socket)
+  end
+
+  def handle_in("scout", %{"where" => invalid_edge, "hand_position" => hand_position, "flip" => invalid_flip}, socket) do
+    push(socket, "action_failed", %{error: "Invalid edge side: #{invalid_edge}. Must be 'beginning' or 'end'"})
+    {:noreply, socket}
+  end
+
+  def process_scout_action(where, hand_position, flip?, socket) do
+    player_id = socket.assigns.user_id
     table_id = socket.assigns.table_id
 
-    case Table.scout(table_id, cards, pos, player_name) do
+    case Table.scout(table_id, player_id, where, hand_position, flip?) do
       :ok ->
         current_state = Table.get_table_state(table_id)
         broadcast!(
           socket, "player_scouted",
           %{
-            player: player_name,
-            cards_in_hand: current_state.player_list[player_name].cards,
+            player: player_id,
+            cards_in_hand: length(current_state.player_list[player_id].cards),
             table_state: current_state.table_cards
           }
         )
@@ -85,13 +119,13 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
     end
   end
 
-  def handle_in("show", %{"card" => cards, "position" => pos}, socket) do
-    player_name = socket.assigns.username
+  def handle_in("show", %{"cards" => cards}, socket) do
+    player_id = socket.assigns.user_id
     table_id = socket.assigns.table_id
 
-    case Table.show(table_id, cards, player_name) do
+    case Table.show(table_id, cards, player_id) do
       :ok ->
-        broadcast!(socket, "player_showed", %{player: player_name, position: pos})
+        broadcast!(socket, "player_showed", %{player: player_id})
         {:reply, :ok, socket}
       {:error, reason} ->
         {:reply, {:error, %{message: reason}}, socket}

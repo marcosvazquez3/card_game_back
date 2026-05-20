@@ -30,7 +30,7 @@ defmodule CardGameBackPhoenix.Game.Deck do
        |> is_divisor_9?(players)
        |> Enum.reverse()
        |> Enum.shuffle()
-       |> spin_card?()
+       |> flip_cards()
        |> Enum.chunk_every(9)
   end
 
@@ -42,16 +42,27 @@ defmodule CardGameBackPhoenix.Game.Deck do
     end
   end
 
-  def spin_card?([]) do
-    []
+  def flip_cards(deck) do
+    Enum.map(deck, fn {x, y} ->
+      if :rand.uniform(2) == 2 do
+        {y, x} # Flip it
+      else
+        {x, y} # Keep it
+      end
+    end)
   end
 
-  def spin_card?([h|t]) do
-    random_number = :rand.uniform(2)
-    {x,y} = h
-    case random_number do
-      2 -> [{y,x} | spin_card?(t)]
-      1 -> [h | spin_card?(t)]
+  def flip_hand(hand) do
+    hand
+    |> Enum.reverse()
+    |> Enum.map(fn {top, bottom} -> {bottom, top} end)
+  end
+
+  def flip_single_card(card, flip?) do
+    {x,y} = card
+    case flip? do
+      true -> {y,x}
+      false -> card
     end
   end
 

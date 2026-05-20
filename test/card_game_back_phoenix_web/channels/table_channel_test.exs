@@ -1,9 +1,9 @@
 defmodule CardGameBackPhoenixWeb.TableChannelTest do
   use CardGameBackPhoenixWeb.ChannelCase
   alias CardGameBackPhoenixWeb.UserSocket
+  alias CardGameBackPhoenix.Game.Deck
   use Mimic
-
-
+  setup :set_mimic_global
   setup do
     # Create the owner of the game
     {:ok, user} = create_user("Player_1")
@@ -42,22 +42,20 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
   defp setup_test_user(name, topic) do
     {:ok, user} = create_user(name)
     {:ok, socket} = connect_socket(user.id)
-    subscribe_and_join(socket, topic, %{"some" => "data"})
-    user.id
+    {:ok, _reply, joined_socket} = subscribe_and_join(socket, topic, %{"some" => "data"})
+    {joined_socket, user.id}
   end
 
   test "Check presence", %{socket: socket, user_id: user_1_id, table_id: table_id} do
     # Add three users to the channel
     topic = "table:#{table_id}"
-
     # User 2
-    user_2_id = setup_test_user("Player_2", topic)
+    {_socket, user_2_id} = setup_test_user("Player_2", topic)
+    # User 3
+    {_socket, user_3_id} = setup_test_user("Player_3", topic)
 
     # User 3
-    user_3_id = setup_test_user("Player_3", topic)
-
-    # User 3
-    user_4_id = setup_test_user("Player_4", topic)
+    {_socket, user_4_id} = setup_test_user("Player_4", topic)
 
     u1 = "#{user_1_id}"
     u2 = "#{user_2_id}"
@@ -77,11 +75,11 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
   defp create_and_start_game(table_id, socket) do
     # Add three users to the channel
     topic = "table:#{table_id}"
-    user_2_id = setup_test_user("Player_2", topic)
-    user_3_id = setup_test_user("Player_3", topic)
-    user_4_id = setup_test_user("Player_4", topic)
-
-    ref = push(socket, "start_game", %{})
+    {socket_user_2, user_2_id} = setup_test_user("Player_2", topic)
+    {socket_user_3, user_3_id} = setup_test_user("Player_3", topic)
+    {socket_user_4, user_4_id} = setup_test_user("Player_4", topic)
+    push(socket, "start_game", %{})
+    {{socket_user_2, user_2_id}, {socket_user_3, user_3_id}, {socket_user_4, user_4_id}}
   end
 
 
@@ -94,57 +92,46 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
   end
 
 
-  test "Validate player information", %{socket: socket, user_id: user_1_id, table_id: table_id} do
-    create_and_start_game(table_id, socket)
+  test "Test complete game", %{socket: socket_user_1, user_id: user_1_id, table_id: table_id} do
+    cards_for_4_players = [
+      [{3, 5}, {9, 7}, {8, 4}, {5, 9}, {1, 9}, {7, 3}, {6, 9}, {8, 1}, {2, 5}],
+      [{8, 3}, {2, 4}, {6, 2}, {7, 1}, {6, 8}, {2, 8}, {2, 7}, {4, 9}, {1, 6}],
+      [{4, 7}, {8, 5}, {3, 9}, {3, 1}, {3, 4}, {7, 8}, {6, 5}, {5, 1}, {1, 4}],
+      [{6, 4}, {2, 1}, {7, 6}, {7, 5}, {2, 9}, {3, 2}, {5, 4}, {6, 3}, {8, 9}]
+    ]
+    Deck
+    |> expect(:deck_gen, fn _count ->
+      cards_for_4_players
+    end)
+    {{socket_user_2, user_2_id}, {socket_user_3, user_3_id}, {socket_user_4, user_4_id}} = create_and_start_game(table_id, socket_user_1)
+    assert_broadcast "game_started", %{status: "running"}
+    ref = push(socket_user_1, "get_user_state", %{})
+    assert_reply ref, :ok, state
+    push(socket_user_1, "select_orientation", %{"flipped" => false})
+    assert_push "orientation_locked", %{success: true}
+    push(socket_user_2, "select_orientation", %{"flipped" => false})
+    assert_push "orientation_locked", %{success: true}
+    push(socket_user_3, "select_orientation", %{"flipped" => false})
+    assert_push "orientation_locked", %{success: true}
+    push(socket_user_4, "select_orientation", %{"flipped" => false})
+    assert_broadcast "orientation_fase_ended", %{turn: turn}
+    IO.inspect(turn)
+
+    # Lets play the game
+    push(socket_user_1, "show", %{"cards" => [{9, 7}, {8, 4}]})
+    assert_broadcast "player_showed", %{player: ^user_1_id}
+    push(socket_user_4, "show", %{"cards" => [{7, 6}, {7, 5}]})
+    assert_broadcast "player_showed", %{player: ^user_4_id}
+    push(socket_user_3, "show", %{"cards" => [{3, 9}, {3, 1}, {3, 4}]})
+    assert_broadcast "player_showed", %{player: ^user_3_id}
+
+    push(socket_user_2, "scout", %{"where" => "beginning", "hand_position" => 1, "flip" => true})
+    assert_broadcast "player_showed", %{player: ^user_3_id}
 
 
+
+    ref = push(socket_user_2, "get_user_state", %{})
+    assert_reply ref, :ok, new_state
+    IO.inspect(new_state)
   end
-
-
-
-
-  # describe "GET /users/register" do
-  #   test "renders registration page", %{conn: conn} do
-  #     conn = get(conn, ~p"/users/register")
-  #     response = html_response(conn, 200)
-  #     assert response =~ "Register"
-  #     assert response =~ ~p"/users/log-in"
-  #     assert response =~ ~p"/users/register"
-  #   end
-
-  #   test "redirects if already logged in", %{conn: conn} do
-  #     conn = conn |> log_in_user(user_fixture()) |> get(~p"/users/register")
-
-  #     assert redirected_to(conn) == ~p"/"
-  #   end
-  # end
-
-  # describe "POST /users/register" do
-  #   @tag :capture_log
-  #   test "creates account but does not log in", %{conn: conn} do
-  #     email = unique_user_email()
-
-  #     conn =
-  #       post(conn, ~p"/users/register", %{
-  #         "user" => valid_user_attributes(email: email)
-  #       })
-
-  #     refute get_session(conn, :user_token)
-  #     assert redirected_to(conn) == ~p"/users/log-in"
-
-  #     assert conn.assigns.flash["info"] =~
-  #              ~r/An email was sent to .*, please access it to confirm your account/
-  #   end
-
-  #   test "render errors for invalid data", %{conn: conn} do
-  #     conn =
-  #       post(conn, ~p"/users/register", %{
-  #         "user" => %{"email" => "with spaces"}
-  #       })
-
-  #     response = html_response(conn, 200)
-  #     assert response =~ "Register"
-  #     assert response =~ "must have the @ sign and no spaces"
-  #   end
-  # end
 end
