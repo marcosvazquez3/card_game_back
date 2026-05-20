@@ -215,12 +215,24 @@ defmodule CardGameBackPhoenix.Game.Table do
 
   def is_string(x) when is_binary(x), do: String.valid?(x)
 
-  def show_action(cards, player_id, state, current_player_cards) do
+  def show_action(cards, player_id, current_player_cards, state) do
     updated_player_cards = delete_player_cards(cards, player_id, current_player_cards)
     if is_binary(updated_player_cards) do
       {:reply, {:error, "cards invalid to show"}, state}
     else
-      new_state_player_update = put_in(state.player_list[player_id].cards, updated_player_cards)
+      point_cards = state.table_cards
+      existing_point_cards = state.player_list[player_id].point_cards
+      updated_point_cards = existing_point_cards ++ point_cards
+      state_with_points = put_in(
+        state,
+        [:player_list, player_id, Access.key!(:point_cards)],
+        updated_point_cards
+      )
+      new_state_player_update = put_in(
+        state_with_points,
+        [:player_list, player_id, Access.key!(:cards)],
+        updated_player_cards
+      )
       next_player_turn = get_next_player_turn(state)
       new_state = %{new_state_player_update | table_cards: cards, table_cards_count: length(cards), turn: next_player_turn, table_cards_owner: player_id}
 
@@ -230,7 +242,7 @@ defmodule CardGameBackPhoenix.Game.Table do
 
   def handle_call({:show, cards, player_id}, _from, state) do
     case is_player_turn(player_id, state) and is_a_valid_hand?(cards) and  is_player_hand_good_enough?(state.table_cards, cards) do
-      true -> show_action(cards, player_id, state, state.player_list[player_id].cards)
+      true -> show_action(cards, player_id, state.player_list[player_id].cards, state)
       false -> {:reply, :error, "turn not valid"}
     end
   end
@@ -255,15 +267,19 @@ defmodule CardGameBackPhoenix.Game.Table do
   def handle_call({:scout, player_id, where, hand_position, flip?}, _from, state) do
     IO.inspect(where)
     if is_player_turn(player_id, state) do
-      {card, new_table_state} = get_card(where, state.table_cards, flip?)
-      updated_player_cards = List.insert_at(state.player_list[player_id].cards, hand_position, card)
-      new_state_player_update = put_in(state.player_list[player_id].cards, updated_player_cards)
+      receives_points = state.table_cards_owner
+      give_points = get_in(state, [:player_list, receives_points, Access.key!(:points)])
+      new_user_point_state = put_in(state, [:player_list, receives_points, Access.key!(:points)], give_points+1)
+      IO.inspect(new_user_point_state)
+      {card, new_table} = get_card(where, new_user_point_state.table_cards, flip?)
+      updated_player_cards = List.insert_at(new_user_point_state.player_list[player_id].cards, hand_position, card)
+      new_state_player_update = put_in(new_user_point_state, [:player_list, player_id, Access.key!(:cards)], updated_player_cards)
       next_player_turn = get_next_player_turn(state)
-      new_state = %{new_state_player_update | table_cards: new_table_state, table_cards_count: length(new_table_state), turn: next_player_turn}
+      new_state = %{new_state_player_update | table_cards: new_table, table_cards_count: length(new_table), turn: next_player_turn}
       case check_round_end(new_state, player_id) do
         {:end_round, reason, final_state} ->
           end_game(reason, final_state)
-        {:continue, valid_state} ->
+        {:continue, _valid_state} ->
           {:reply, :ok, new_state}
       end
     else
@@ -374,7 +390,7 @@ defmodule CardGameBackPhoenix.Game.Table do
 
 
   defp check_round_end(state, active_player) do
-    player_cards = get_in(state, [:player_list, active_player, :cards])
+    player_cards = get_in(state, [:player_list, active_player, Access.key!(:cards)])
     if length(player_cards) == 0 do
       {:end_round, :empty_hand, state}
     else
@@ -394,8 +410,8 @@ defmodule CardGameBackPhoenix.Game.Table do
   defp end_game(reason, state) do
     updated_player_list =
       Map.new(state.player_list, fn {player_id, player} ->
-        show_points = player.points
-        scouted_points = length(player.pointcards)
+        scouted_points = player.points
+        show_points = length(player.point_cards)
         cards_in_hand = length(player.cards)
         penalty =
           cond do

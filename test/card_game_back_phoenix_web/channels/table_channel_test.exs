@@ -130,7 +130,7 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
 
 
 
-    ref = push(socket_user_2, "get_user_state", %{})
+    ref = push(socket_user_3, "get_user_state", %{})
     assert_reply ref, :ok, new_state
     IO.inspect(new_state)
   end
