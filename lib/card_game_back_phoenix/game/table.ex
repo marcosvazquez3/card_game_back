@@ -235,8 +235,12 @@ defmodule CardGameBackPhoenix.Game.Table do
       )
       next_player_turn = get_next_player_turn(state)
       new_state = %{new_state_player_update | table_cards: cards, table_cards_count: length(cards), turn: next_player_turn, table_cards_owner: player_id}
-
-      {:reply, :ok, new_state}
+      case check_end_game(new_state, player_id) do
+        {:end_round, reason, final_state} ->
+          end_game(reason, final_state)
+        {:continue, _valid_state} ->
+          {:reply, :ok, new_state}
+      end
     end
   end
 
@@ -265,18 +269,16 @@ defmodule CardGameBackPhoenix.Game.Table do
   end
 
   def handle_call({:scout, player_id, where, hand_position, flip?}, _from, state) do
-    IO.inspect(where)
     if is_player_turn(player_id, state) do
       receives_points = state.table_cards_owner
       give_points = get_in(state, [:player_list, receives_points, Access.key!(:points)])
       new_user_point_state = put_in(state, [:player_list, receives_points, Access.key!(:points)], give_points+1)
-      IO.inspect(new_user_point_state)
       {card, new_table} = get_card(where, new_user_point_state.table_cards, flip?)
       updated_player_cards = List.insert_at(new_user_point_state.player_list[player_id].cards, hand_position, card)
       new_state_player_update = put_in(new_user_point_state, [:player_list, player_id, Access.key!(:cards)], updated_player_cards)
       next_player_turn = get_next_player_turn(state)
       new_state = %{new_state_player_update | table_cards: new_table, table_cards_count: length(new_table), turn: next_player_turn}
-      case check_round_end(new_state, player_id) do
+      case check_end_game(new_state, player_id) do
         {:end_round, reason, final_state} ->
           end_game(reason, final_state)
         {:continue, _valid_state} ->
@@ -389,7 +391,7 @@ defmodule CardGameBackPhoenix.Game.Table do
   end
 
 
-  defp check_round_end(state, active_player) do
+  defp check_end_game(state, active_player) do
     player_cards = get_in(state, [:player_list, active_player, Access.key!(:cards)])
     if length(player_cards) == 0 do
       {:end_round, :empty_hand, state}
@@ -428,13 +430,13 @@ defmodule CardGameBackPhoenix.Game.Table do
     end_state = %{
       state |
       player_list: updated_player_list,
-      phase: :round_over
+      phase: :game_over
     }
     scoreboard =
       Map.new(updated_player_list, fn {player_id, player} ->
         {player_id, player.points}
       end)
-    {:reply, {:round_over, reason, scoreboard}, end_state}
+    {:reply, {:game_over, reason, scoreboard}, end_state}
   end
 
   def via_tuple(table_id), do: {:via, Registry, {Registry.Table, table_id}}

@@ -10,7 +10,7 @@ defmodule CardGameBackPhoenixWeb.UserSocket do
 
   channel "table:*", CardGameBackPhoenixWeb.TableChannel
   channel "user:*", RealtimeChatWeb.UserChannel
-  channel "friends:*", RealtimeChatWeb.UserChannel
+  channel "friends:*", CardGameBackPhoenixWeb.FriendsChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

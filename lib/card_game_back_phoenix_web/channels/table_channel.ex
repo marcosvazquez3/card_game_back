@@ -16,6 +16,7 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
         {:error, %{reason: "table_not_found"}}
       table ->
         if authorized?(socket.assigns.user_id, table) do
+          update_status_for_friends(socket, :lobby)
           send(self(), :after_join)
           {:ok, assign(socket, :table_id, table_id)}
         else
@@ -57,6 +58,7 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
       {:ok, _pid} ->
         new_socket = assign(socket, :phase, :running)
         broadcast!(new_socket, "game_started", %{status: "running"})
+        update_status_for_friends(new_socket, :in_game)
         {:noreply, new_socket}
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
@@ -129,7 +131,13 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
         {:reply, :ok, socket}
       {:error, reason} ->
         {:reply, {:error, %{message: reason}}, socket}
-    end
+      {:game_over, reason, scoreboard} ->
+        broadcast!(socket, "end_game", %{
+          reason: to_string(reason),
+          final_scores: scoreboard
+        })
+        {:reply, {:ok, %{status: "game_over"}}, socket}
+      end
   end
 
   # Handle incoming messages from clients
@@ -171,5 +179,26 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
   # Add authorization logic here as required.
   defp authorized?(_user_id, _table_id) do
     true
+  end
+
+
+  defp update_status_for_friends(socket, status) do
+    user_id = socket.assigns.user_id
+    friends_topic = "presence:friends:#{user_id}"
+    case CardGameBackPhoenixWeb.Presence.get_by_key(friends_topic, user_id) do
+      %{metas: [latest_meta | _]} ->
+        friends_channel_pid = latest_meta.phx_ref_pid
+        {:ok, _} = CardGameBackPhoenixWeb.Presence.update(
+          friends_channel_pid,
+          friends_topic,
+          user_id,
+          %{
+            online_at: latest_meta.online_at,
+            status: status
+          }
+        )
+      [] ->
+        :ok
+    end
   end
 end

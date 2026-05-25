@@ -94,3 +94,6 @@ Por exemplo sobre os channels podemos explicar o contexto xeral de elixir e desp
 
 
 Acordarme da metodoloxía 
+
+
+Necesito algo que primeiro me carge aos amigos dun usuario, e despois que me cargue o estado destes, primeiro un load a base de datos cando fas join ao channel de friends e despois sacamos os que están online

@@ -70,6 +70,8 @@ defmodule CardGameBackPhoenixWeb.Router do
     get "/users/settings", UserSettingsController, :edit
     put "/users/settings", UserSettingsController, :update
     get "/users/settings/confirm-email/:token", UserSettingsController, :confirm_email
+    post "/users/friends/:friend_id", FriendsController, :add_friend
+    post "/users/block/:block_id", FriendsController, :block_user
   end
 
   scope "/", CardGameBackPhoenixWeb do
@@ -80,4 +82,5 @@ defmodule CardGameBackPhoenixWeb.Router do
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end
+
 end

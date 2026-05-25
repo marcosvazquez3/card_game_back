@@ -17,7 +17,7 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
     CardGameBackPhoenix.Accounts.register_user(%{
       email: "test#{System.unique_integer()}@example.com",
       password: "password1234",
-      user_name: "Player1"
+      user_name: user_name
     })
   end
 
@@ -92,9 +92,11 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
   end
 
 
+# O test funciona de principio a fin ben, parece que todo ten sentido. Guay
   test "Test complete game", %{socket: socket_user_1, user_id: user_1_id, table_id: table_id} do
     cards_for_4_players = [
-      [{3, 5}, {9, 7}, {8, 4}, {5, 9}, {1, 9}, {7, 3}, {6, 9}, {8, 1}, {2, 5}],
+      # [{3, 5}, {9, 7}, {8, 4}, {5, 9}, {1, 9}, {7, 3}, {6, 9}, {8, 1}, {2, 5}],
+      [ {9, 7}, {8, 4}, {9, 9}, {9, 9}, {9, 3}, {9, 9}, {9, 1}, {9, 5}],
       [{8, 3}, {2, 4}, {6, 2}, {7, 1}, {6, 8}, {2, 8}, {2, 7}, {4, 9}, {1, 6}],
       [{4, 7}, {8, 5}, {3, 9}, {3, 1}, {3, 4}, {7, 8}, {6, 5}, {5, 1}, {1, 4}],
       [{6, 4}, {2, 1}, {7, 6}, {7, 5}, {2, 9}, {3, 2}, {5, 4}, {6, 3}, {8, 9}]
@@ -115,7 +117,6 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
     assert_push "orientation_locked", %{success: true}
     push(socket_user_4, "select_orientation", %{"flipped" => false})
     assert_broadcast "orientation_fase_ended", %{turn: turn}
-    IO.inspect(turn)
 
     # Lets play the game
     push(socket_user_1, "show", %{"cards" => [{9, 7}, {8, 4}]})
@@ -129,9 +130,50 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
     assert_broadcast "player_showed", %{player: ^user_3_id}
 
 
+    winner_id = socket_user_1
+    loser_id = socket_user_2
+    push(socket_user_1, "show", %{"cards" => [{9, 9}, {9, 9}, {9, 3}, {9, 9}, {9, 1}, {9, 5}]})
+    assert_broadcast "end_game", %{
+      reason: "empty_hand",
+      final_scores: final_scores
+    }
 
-    ref = push(socket_user_3, "get_user_state", %{})
-    assert_reply ref, :ok, new_state
-    IO.inspect(new_state)
+    assert Map.get(final_scores, user_1_id) == 2
+    assert Map.get(final_scores, user_2_id) == -10
+
+
+
+    # ref = push(socket_user_1, "get_user_state", %{})
+    # assert_reply ref, :ok, new_state
+    # IO.inspect(new_state)
   end
+
+
+  test "Test add friends" do
+    {:ok, user_manuel} = create_user("Manuel")
+    {:ok, socket_manuel} = connect_socket(user_manuel.id)
+
+    {:ok, user_maria} = create_user("María")
+    {:ok, socket_maria} = connect_socket(user_maria.id)
+
+    CardGameBackPhoenix.Utils.Accounts.add_friend(user_manuel.id, user_maria.id)
+
+    #CardGameBackPhoenix.Utils.Accounts.dump_table(CardGameBackPhoenix.Schemas.UsersRelationships)
+
+    {:ok, reply_manuel, new_manuel_socket} = subscribe_and_join(socket_manuel, "friends:#{user_manuel.id}", %{"some" => "data"})
+    assert Enum.any?(reply_manuel.online_friends, fn friend ->
+      friend.user_name == "María" and friend.status == :offline
+    end)
+
+    {:ok, reply_maria, new_maria_socket} = subscribe_and_join(socket_maria, "friends:#{user_maria.id}", %{"some" => "data"})
+    assert Enum.any?(reply_maria.online_friends, fn friend ->
+      friend.user_name == "Manuel" and friend.status == :online
+    end)
+
+    # Manuel starts a game
+    push(socket, "start_game", %{})
+
+  end
+
+
 end
