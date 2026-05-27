@@ -1,8 +1,8 @@
-defmodule CardGameBackPhoenixWeb.FriendsChannel do
+defmodule CardGameBackPhoenixWeb.UserChannel do
   use CardGameBackPhoenixWeb, :channel
   alias CardGameBackPhoenixWeb.Presence
 
-  def join("friends:" <> user_id_str, _payload, socket) do
+  def join("user:" <> user_id_str, _payload, socket) do
     user_id = String.to_integer(user_id_str)
     if user_id == socket.assigns.user_id do
       friends = CardGameBackPhoenix.Utils.Accounts.list_relationships_by_status(user_id, "friends")

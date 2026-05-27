@@ -97,3 +97,5 @@ Acordarme da metodoloxía
 
 
 Necesito algo que primeiro me carge aos amigos dun usuario, e despois que me cargue o estado destes, primeiro un load a base de datos cando fas join ao channel de friends e despois sacamos os que están online
+
+Queda por facer unha táboa para garda o estado da partida para poder recuperala en caso de fallo. Estaría ben, facer eso vamos.

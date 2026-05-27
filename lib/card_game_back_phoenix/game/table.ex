@@ -13,6 +13,7 @@ defmodule CardGameBackPhoenix.Game.Table do
 
   # Cliente
 
+  @spec start_link(any()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(table_id) do
     GenServer.start_link(__MODULE__, table_id, name: via_tuple(table_id))
   end

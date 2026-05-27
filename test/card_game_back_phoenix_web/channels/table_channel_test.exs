@@ -160,18 +160,18 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
 
     #CardGameBackPhoenix.Utils.Accounts.dump_table(CardGameBackPhoenix.Schemas.UsersRelationships)
 
-    {:ok, reply_manuel, new_manuel_socket} = subscribe_and_join(socket_manuel, "friends:#{user_manuel.id}", %{"some" => "data"})
+    {:ok, reply_manuel, new_manuel_socket} = subscribe_and_join(socket_manuel, "user:#{user_manuel.id}", %{"some" => "data"})
     assert Enum.any?(reply_manuel.online_friends, fn friend ->
       friend.user_name == "María" and friend.status == :offline
     end)
 
-    {:ok, reply_maria, new_maria_socket} = subscribe_and_join(socket_maria, "friends:#{user_maria.id}", %{"some" => "data"})
+    {:ok, reply_maria, new_maria_socket} = subscribe_and_join(socket_maria, "user:#{user_maria.id}", %{"some" => "data"})
     assert Enum.any?(reply_maria.online_friends, fn friend ->
       friend.user_name == "Manuel" and friend.status == :online
     end)
 
     # Manuel starts a game
-    push(socket, "start_game", %{})
+    #push(socket, "start_game", %{})
 
   end
 

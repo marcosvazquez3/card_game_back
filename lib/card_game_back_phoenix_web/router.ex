@@ -1,7 +1,7 @@
 defmodule CardGameBackPhoenixWeb.Router do
   use CardGameBackPhoenixWeb, :router
 
-  import CardGameBackPhoenixWeb.UserAuth
+  import CardGameBackPhoenixWeb.Live.UserAuth
   alias CardGameBackPhoenixWeb.GameController
   alias CardGameBackPhoenix.Router, as: LegacyRouter
 
@@ -19,11 +19,11 @@ defmodule CardGameBackPhoenixWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", CardGameBackPhoenixWeb do
-    pipe_through :browser
+  # scope "/", CardGameBackPhoenixWeb do
+  #   pipe_through :browser
 
-    get "/", PageController, :home
-  end
+  #   get "/", PageController, :home
+  # end
 
   scope "/legacy" do
     forward "/", LegacyRouter
@@ -57,30 +57,31 @@ defmodule CardGameBackPhoenixWeb.Router do
 
   ## Authentication routes
 
-  scope "/", CardGameBackPhoenixWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
-
-    get "/users/register", UserRegistrationController, :new
-    post "/users/register", UserRegistrationController, :create
-  end
-
-  scope "/", CardGameBackPhoenixWeb do
+  scope "/live", CardGameBackPhoenixWeb.Live do
     pipe_through [:browser, :require_authenticated_user]
 
-    get "/users/settings", UserSettingsController, :edit
-    put "/users/settings", UserSettingsController, :update
-    get "/users/settings/confirm-email/:token", UserSettingsController, :confirm_email
+    live_session :require_authenticated_user,
+      on_mount: [{CardGameBackPhoenixWeb.Live.UserAuth, :require_authenticated}] do
+      live "/users/settings", UserLive.Settings, :edit
+      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+    end
+
+    post "/users/update-password", UserSessionController, :update_password
     post "/users/friends/:friend_id", FriendsController, :add_friend
     post "/users/block/:block_id", FriendsController, :block_user
   end
 
-  scope "/", CardGameBackPhoenixWeb do
+  scope "/", CardGameBackPhoenixWeb.Live do
     pipe_through [:browser]
 
-    get "/users/log-in", UserSessionController, :new
-    get "/users/log-in/:token", UserSessionController, :confirm
+    live_session :current_user,
+      on_mount: [{CardGameBackPhoenixWeb.Live.UserAuth, :mount_current_scope}] do
+      live "/users/register", UserLive.Registration, :new
+      live "/", UserLive.Login, :new
+      live "/users/log-in/:token", UserLive.Confirmation, :new
+    end
+
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end
-
 end

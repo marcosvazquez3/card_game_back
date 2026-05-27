@@ -253,7 +253,6 @@ defmodule CardGameBackPhoenix.Accounts do
 
       iex> deliver_user_update_email_instructions(user, current_email, &url(~p"/users/settings/confirm-email/#{&1}"))
       {:ok, %{to: ..., body: ...}}
-
   """
   def deliver_user_update_email_instructions(%User{} = user, current_email, update_email_url_fun)
       when is_function(update_email_url_fun, 1) do

@@ -8,6 +8,19 @@
 import Config
 
 config :card_game_back_phoenix, :scopes,
+  accounts_user: [
+    default: false,
+    module: CardGameBackPhoenix.Accounts.Scope,
+    assign_key: :current_scope,
+    access_path: [:user, :id],
+    schema_key: :user_id,
+    schema_type: :id,
+    schema_table: :users,
+    test_data_fixture: CardGameBackPhoenix.AccountsFixtures,
+    test_setup_helper: :register_and_log_in_user
+  ]
+
+config :card_game_back_phoenix, :scopes,
   user: [
     default: true,
     module: CardGameBackPhoenix.Accounts.Scope,
