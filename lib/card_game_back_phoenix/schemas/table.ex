@@ -3,7 +3,6 @@ defmodule CardGameBackPhoenix.Schemas.Table do
   import Ecto.Changeset
 
   schema "tables" do
-    field :mv_dc, :string #mv_dc means movement document
     timestamps()
     belongs_to :owner, CardGameBackPhoenix.Accounts.User
     field :ending_date, :utc_datetime
@@ -13,8 +12,8 @@ defmodule CardGameBackPhoenix.Schemas.Table do
 
   def changeset(table, attrs) do
     table
-    |> cast(attrs, [:mv_dc, :status, :owner_id])
-    |> validate_required([:mv_dc, :owner_id])
+    |> cast(attrs, [:status, :owner_id])
+    |> validate_required([:owner_id])
   end
 
   def status_changeset(table, attrs) do

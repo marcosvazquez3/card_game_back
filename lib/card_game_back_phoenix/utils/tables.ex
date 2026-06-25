@@ -41,14 +41,19 @@ defmodule CardGameBackPhoenix.Utils.Tables do
   end
 
   def create_game_db(table_id, player_ids) do
-    table = Repo.get!(Schemas.Table, table_id)
-
-    Multi.new()
+    multi = Multi.new()
     |> Multi.update(:update_status, Schemas.Table.status_changeset(table, %{status: :running}))
     |> Multi.run(:add_players, fn repo, %{update_status: updated_table} ->
       add_players(repo, updated_table.id, player_ids)
     end)
-    |> Repo.transaction()
+
+    case Repo.transaction(multi) do
+      {:ok, _result} ->
+        {:ok, "Partida iniciada"}
+
+      {:error, step, reason, _changes} ->
+        {:error, {step, reason}}
+    end
   end
 
   defp add_players(repo, table_id, player_ids) do

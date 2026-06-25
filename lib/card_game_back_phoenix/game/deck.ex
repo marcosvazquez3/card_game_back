@@ -20,11 +20,6 @@ defmodule CardGameBackPhoenix.Game.Deck do
   def deck_gen(players) do
     base_list = base_list(players)
     deck = for x <- base_list, y <- base_list, x < y, do: {x, y}
-    # Puedde que el base list sea menor del esperado por el trunc
-    # El num reverse sirve para que al eliminar elementos en el is_divisor siempre se elminen
-    # las cartas con mayor número
-    # Creo que non vale a pena crear as baraxas dinámicamente porque vai facer as partidas moi curtas
-    # para poucos xogadores
     deck
        |> Enum.reverse()
        |> is_divisor_9?(players)
