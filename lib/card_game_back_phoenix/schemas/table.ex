@@ -5,9 +5,9 @@ defmodule CardGameBackPhoenix.Schemas.Table do
   schema "tables" do
     timestamps()
     belongs_to :owner, CardGameBackPhoenix.Accounts.User
-    field :ending_date, :utc_datetime
+    field :started_at, :naive_datetime
+    field :ended_at, :naive_datetime
     field :status, Ecto.Enum, values: [:lobby, :running, :finished], default: :lobby
-
   end
 
   def changeset(table, attrs) do
@@ -24,10 +24,10 @@ defmodule CardGameBackPhoenix.Schemas.Table do
   end
 
   defp did_game_finish?(changeset) do
-    if get_change(changeset, :status) == :finished do
-      put_change(changeset, :ending_date, DateTime.utc_now() |> DateTime.truncate(:second))
-    else
-      changeset
+    case get_change(changeset, :status) do
+      :running -> put_change(changeset, :started_at, NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+      :finished -> put_change(changeset, :ended_at, NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+      _ -> changeset
     end
   end
 

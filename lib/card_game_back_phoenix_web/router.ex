@@ -64,6 +64,7 @@ defmodule CardGameBackPhoenixWeb.Router do
       on_mount: [{CardGameBackPhoenixWeb.Live.UserAuth, :require_authenticated}] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+      live "/dashboard", UserDashboardLive, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password

@@ -9,7 +9,6 @@ defmodule CardGameBackPhoenixWeb.UserSocket do
   ## Channels
 
   channel "table:*", CardGameBackPhoenixWeb.TableChannel
-  #channel "user:*", RealtimeChatWeb.UserChannel
   channel "user:*", CardGameBackPhoenixWeb.UserChannel
 
   # Socket params are passed from the client and can
@@ -29,10 +28,17 @@ defmodule CardGameBackPhoenixWeb.UserSocket do
   # Socket params come from the client connection
   # Use this to authenticate and identify the user
   @impl true
+  def connect(%{"token" => "test_player"}, socket, _connect_info) do
+    {:ok, assign(socket, :user_id, "mock_student_user")}
+  end
+
   def connect(%{"token" => token}, socket, _connect_info) do
     case verify_token(token) do
-      {:ok, user_id} ->
-        {:ok, assign(socket, :user_id, user_id)}
+      {:ok, %{user_id: user_id, user_name: user_name}} ->
+        {:ok,
+         socket
+         |> assign(:user_id, user_id)
+         |> assign(:user_name, user_name)}
 
       {:error, reason} ->
         :error

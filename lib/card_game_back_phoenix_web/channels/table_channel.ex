@@ -15,13 +15,13 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
       nil ->
         {:error, %{reason: "table_not_found"}}
       table ->
-        if authorized?(socket.assigns.user_id, table) do
-          update_status_for_friends(socket, :lobby)
-          send(self(), :after_join)
-          {:ok, assign(socket, :table_id, table_id)}
-        else
-          {:error, %{reason: "unauthorized"}}
-        end
+    if authorized?(socket.assigns.user_id, table) do
+      update_status_for_friends(socket, :lobby)
+      send(self(), :after_join)
+      {:ok, assign(socket, :table_id, table_id)}
+    else
+      {:error, %{reason: "unauthorized"}}
+    end
     end
   end
 
@@ -79,7 +79,7 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
     if should_flip do
       Table.flip_initial_hand(table_id, user_id)
     end
-    Table.mark_player_ready(table_id, user_id)
+    Table.player_ready(table_id, user_id)
     case Table.all_players_ready?(table_id) do
       {true, turn} -> broadcast!(socket, "orientation_fase_ended", %{turn: turn})
       {false, _turn} -> push(socket, "orientation_locked", %{success: true})
@@ -126,7 +126,7 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
     table_id = socket.assigns.table_id
 
     case Table.show(table_id, cards, player_id) do
-      :ok ->
+      {:ok, state} ->
         broadcast!(socket, "player_showed", %{player: player_id})
         {:reply, :ok, socket}
       {:error, reason} ->
@@ -182,6 +182,7 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
   end
 
 
+  # TODO está mal
   defp update_status_for_friends(socket, status) do
     user_id = socket.assigns.user_id
     friends_topic = "presence:friends:#{user_id}"

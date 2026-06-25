@@ -41,6 +41,7 @@ defmodule CardGameBackPhoenix.Utils.Tables do
   end
 
   def create_game_db(table_id, player_ids) do
+    table = Repo.get!(Schemas.Table, table_id)
     multi = Multi.new()
     |> Multi.update(:update_status, Schemas.Table.status_changeset(table, %{status: :running}))
     |> Multi.run(:add_players, fn repo, %{update_status: updated_table} ->

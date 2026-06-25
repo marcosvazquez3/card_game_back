@@ -10,6 +10,7 @@ defmodule CardGameBackPhoenix.Game.ScoutLogic do
   # =========================================================================
 
   def is_a_valid_hand?([]), do: true
+  def is_a_valid_hand?([{n, _}]), do: true
   def is_a_valid_hand?([{n, _} | t]), do: is_a_valid_hand?(t, n)
 
   defp is_a_valid_hand?([], _, _), do: true
@@ -25,6 +26,13 @@ defmodule CardGameBackPhoenix.Game.ScoutLogic do
       n - last == -1 -> is_a_valid_hand?(t, n, :incremental)
       true -> false
     end
+  end
+
+  def are_adjacent_in_hand?(cards, player_hand) do
+    n = length(cards)
+    Enum.any?(0..(length(player_hand) - n), fn start ->
+      Enum.slice(player_hand, start, n) == cards
+    end)
   end
 
   def is_player_hand_good_enough?(table_cards, player_cards) do

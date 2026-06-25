@@ -15,11 +15,13 @@ defmodule CardGameBackPhoenix.Game.Table do
   def add_player(table_id, player_id), do: GenServer.call(via_tuple(table_id), {:add_player, player_id})
   def show(table_id, cards, player_id), do: GenServer.call(via_tuple(table_id), {:show, cards, player_id})
   def scout(table_id, player_id, where, hand_position, flip?), do: GenServer.call(via_tuple(table_id), {:scout, player_id, where, hand_position, flip?})
+  def scout_for_show(table_id, player_id, where, hand_position, flip?), do: GenServer.call(via_tuple(table_id), {:scout_for_show, player_id, where, hand_position, flip?})
   def get_table_state(table_id), do: GenServer.call(via_tuple(table_id), :get_state)
   def get_user_state(table_id, user_id), do: GenServer.call(via_tuple(table_id), {:get_user_state, user_id})
   def all_players_ready?(table_id), do: GenServer.call(via_tuple(table_id), :all_players_ready)
   def flip_initial_hand(table_id, user_id), do: GenServer.call(via_tuple(table_id), {:flip_initial_hand, user_id})
   def mark_player_ready(table_id, user_id), do: GenServer.call(via_tuple(table_id), {:mark_player_ready, user_id})
+  def player_ready(table_id, user_id), do: mark_player_ready(table_id, user_id)
 
   # =========================================================================
   # Callbacks Servidor (GenServer)
@@ -74,12 +76,12 @@ defmodule CardGameBackPhoenix.Game.Table do
   @impl true
   def handle_call({:show, cards, player_id}, _from, state) do
     is_turn = state.turn == player_id
+    current_player_cards = state.player_list[player_id].cards
     valid_hand = ScoutLogic.is_a_valid_hand?(cards)
+    adjacent = ScoutLogic.are_adjacent_in_hand?(cards, current_player_cards)
     good_enough = ScoutLogic.is_player_hand_good_enough?(state.table_cards, cards)
 
-    if is_turn and valid_hand and good_enough do
-      current_player_cards = state.player_list[player_id].cards
-
+    if is_turn and valid_hand and adjacent and good_enough do
       case ScoutLogic.delete_player_cards(cards, player_id, current_player_cards) do
         {:error, reason} ->
           {:reply, {:error, reason}, state}
@@ -94,10 +96,16 @@ defmodule CardGameBackPhoenix.Game.Table do
           next_player_turn = ScoutLogic.get_next_player_turn(state.player_order, state.turn)
           new_state = %{new_state_player_update | table_cards: cards, table_cards_count: length(cards), turn: next_player_turn, table_cards_owner: player_id}
 
+          new_state = if state.player_list[player_id].scout_and_show == :in_progress do
+            put_in(new_state, [:player_list, player_id, Access.key!(:scout_and_show)], true)
+          else
+            new_state
+          end
+
           handle_potential_end(new_state, player_id)
       end
     else
-      {:reply, :error, "turn or hand not valid"}
+      {:reply, {:error, "turn or hand not valid"}, state}
     end
   end
 
@@ -118,6 +126,36 @@ defmodule CardGameBackPhoenix.Game.Table do
       handle_potential_end(new_state, player_id)
     else
       {:reply, {:error, "Not your turn"}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:scout_for_show, player_id, where, hand_position, flip?}, _from, state) do
+    cond do
+      state.turn != player_id ->
+        {:reply, {:error, "Not your turn"}, state}
+
+      state.player_list[player_id].scout_and_show != false ->
+        {:reply, {:error, "Scout & Show token not available"}, state}
+
+      state.table_cards_owner == nil ->
+        {:reply, {:error, "No cards on table to scout"}, state}
+
+      true ->
+        receives_points = state.table_cards_owner
+        current_points = get_in(state, [:player_list, receives_points, Access.key!(:points)])
+        state_with_point = put_in(state, [:player_list, receives_points, Access.key!(:points)], current_points + 1)
+
+        {card, new_table} = ScoutLogic.get_card(where, state_with_point.table_cards, flip?)
+        updated_cards = List.insert_at(state_with_point.player_list[player_id].cards, hand_position, card)
+
+        new_state =
+          state_with_point
+          |> put_in([:player_list, player_id, Access.key!(:cards)], updated_cards)
+          |> put_in([:player_list, player_id, Access.key!(:scout_and_show)], :in_progress)
+          |> Map.merge(%{table_cards: new_table, table_cards_count: length(new_table)})
+
+        {:reply, {:ok, new_state}, new_state}
     end
   end
 
@@ -152,13 +190,16 @@ defmodule CardGameBackPhoenix.Game.Table do
     updated_player_list = Map.update!(state.player_list, user_id, fn player ->
       %{player | cards: Game.Deck.flip_hand(player.cards)}
     end)
-    {:reply, {"hand_fliped"}, %{state | player_list: updated_player_list}}
+    updated_state = %{state | player_list: updated_player_list}
+    {:reply, {:ok, updated_state}, updated_state}
   end
 
   @impl true
   def handle_call({:mark_player_ready, user_id}, _from, state) do
     updated_ready_map = Map.put(state.ready_players, user_id, true)
-    {:reply, {"player_ready"}, %{state | ready_players: updated_ready_map}}
+    updated_state = %{state | ready_players: updated_ready_map}
+    reply = if Enum.all?(updated_ready_map, fn {_, v} -> v end), do: {:ok, :all_ready}, else: {:ok, :player_marked_ready}
+    {:reply, reply, updated_state}
   end
 
   # =========================================================================
@@ -172,7 +213,7 @@ defmodule CardGameBackPhoenix.Game.Table do
         end_state = %{state | player_list: updated_player_list, phase: :game_over}
         {:reply, {:game_over, reason, scoreboard}, end_state}
       {:continue, _} ->
-        {:reply, :ok, state}
+        {:reply, {:ok, state}, state}
     end
   end
 
