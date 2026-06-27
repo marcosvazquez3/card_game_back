@@ -40,12 +40,6 @@ defmodule CardGameBackPhoenixWeb.TableChannel do
     {:stop, :normal, socket}
   end
 
-
-  # O table_id vai vir dado, cando a primeira persoa lle de a crear game
-  # que a generará unha soa persoan, xa se vai generar un uuid
-  # que despois usaremos na table_id
-  # O user_id vai vir directamente no socket vaise asignar directamente no momento do logging
-  # FALTAN VALIDACIÓNS PA CONDICIÓNS DE CARREIRA
   def handle_in("start_game", _payload, socket) do
     topic = socket.topic
     presences = CardGameBackPhoenixWeb.Presence.list(topic)

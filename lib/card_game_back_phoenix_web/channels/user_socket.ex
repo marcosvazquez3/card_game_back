@@ -40,7 +40,7 @@ defmodule CardGameBackPhoenixWeb.UserSocket do
          |> assign(:user_id, user_id)
          |> assign(:user_name, user_name)}
 
-      {:error, reason} ->
+      {:error, _reason} ->
         :error
     end
   end

@@ -8,7 +8,7 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
     # Create the owner of the game
     {:ok, user} = create_user("Player_1")
     {:ok, table} = create_game(user.id)
-    {:ok, socket} = connect_socket(user.id)
+    {:ok, socket} = connect_socket(user)
     {:ok, reply, socket} = subscribe_and_join(socket, "table:#{table.id}", %{"some" => "data"})
     %{socket: socket, user_id: user.id, table_id: table.id}
   end
@@ -30,8 +30,8 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
     CardGameBackPhoenix.Utils.Tables.create_game(table_attrs)
   end
 
-  defp connect_socket(user_id) do
-    token = Phoenix.Token.sign(CardGameBackPhoenixWeb.Endpoint, "user socket", user_id)
+  defp connect_socket(user) do
+    token = Phoenix.Token.sign(CardGameBackPhoenixWeb.Endpoint, "user socket", %{user_id: user.id, user_name: user.user_name})
     connect(UserSocket, %{"token" => token})
   end
 
@@ -41,7 +41,7 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
 
   defp setup_test_user(name, topic) do
     {:ok, user} = create_user(name)
-    {:ok, socket} = connect_socket(user.id)
+    {:ok, socket} = connect_socket(user)
     {:ok, _reply, joined_socket} = subscribe_and_join(socket, topic, %{"some" => "data"})
     {joined_socket, user.id}
   end
@@ -151,10 +151,10 @@ defmodule CardGameBackPhoenixWeb.TableChannelTest do
 
   test "Test add friends" do
     {:ok, user_manuel} = create_user("Manuel")
-    {:ok, socket_manuel} = connect_socket(user_manuel.id)
+    {:ok, socket_manuel} = connect_socket(user_manuel)
 
     {:ok, user_maria} = create_user("María")
-    {:ok, socket_maria} = connect_socket(user_maria.id)
+    {:ok, socket_maria} = connect_socket(user_maria)
 
     CardGameBackPhoenix.Utils.Accounts.add_friend(user_manuel.id, user_maria.id)
 
